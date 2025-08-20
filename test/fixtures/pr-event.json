@@ -1,0 +1,35 @@
+{
+  "action": "opened",
+  "number": 123,
+  "pull_request": {
+    "id": 1,
+    "number": 123,
+    "state": "open",
+    "title": "Add new validation feature",
+    "body": "This PR adds a new validation feature for AI contribution validation.",
+    "head": {
+      "sha": "abc123",
+      "ref": "feature/validation",
+      "repo": {
+        "name": "test-repo",
+        "full_name": "test-owner/test-repo"
+      }
+    },
+    "base": {
+      "sha": "def456",
+      "ref": "main",
+      "repo": {
+        "name": "test-repo",
+        "full_name": "test-owner/test-repo"
+      }
+    }
+  },
+  "repository": {
+    "id": 1,
+    "name": "test-repo",
+    "full_name": "test-owner/test-repo",
+    "owner": {
+      "login": "test-owner"
+    }
+  }
+}

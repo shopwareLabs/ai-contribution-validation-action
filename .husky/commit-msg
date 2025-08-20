@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Validate commit message format (conventional commits)
+# This will check if the commit message follows the pattern: type(scope): description
+npx --no -- commitizen --hook || true

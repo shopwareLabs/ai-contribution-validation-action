@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/shopware/ai-contribution-validation-action#readme
+    about: Read the documentation for setup and configuration help
+  - name: 💬 Discussions
+    url: https://github.com/shopware/ai-contribution-validation-action/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🔧 Support
+    url: https://github.com/shopware/ai-contribution-validation-action/discussions/categories/support
+    about: Get help with setup, configuration, or troubleshooting

@@ -1,0 +1,90 @@
+name: Validate Pull Requests - Multi-Language
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # Validate TypeScript/JavaScript changes
+  validate-frontend:
+    name: Frontend Validation
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, '.ts') || contains(github.event.pull_request.changed_files, '.js')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate TypeScript changes
+        uses: shopware/ai-contribution-validation-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          guidelines-file: 'docs/frontend-guidelines.md'
+          comment-identifier: 'frontend-validator'
+
+  # Validate Python changes
+  validate-backend:
+    name: Backend Validation
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, '.py')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Python changes
+        uses: shopware/ai-contribution-validation-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          guidelines-file: 'docs/backend-guidelines.md'
+          gemini-model: 'gemini-1.5-pro'
+          comment-identifier: 'backend-validator'
+
+  # Validate documentation changes
+  validate-docs:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, '.md')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate documentation changes
+        uses: shopware/ai-contribution-validation-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          guidelines-file: 'docs/documentation-guidelines.md'
+          max-pr-size: '10000'
+          fail-on-errors: false
+          comment-identifier: 'docs-validator'
+
+  # General validation for any other changes
+  validate-general:
+    name: General Validation
+    runs-on: ubuntu-latest
+    if: >
+      !contains(github.event.pull_request.changed_files, '.ts') &&
+      !contains(github.event.pull_request.changed_files, '.js') &&
+      !contains(github.event.pull_request.changed_files, '.py') &&
+      !contains(github.event.pull_request.changed_files, '.md')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: General validation
+        uses: shopware/ai-contribution-validation-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          guidelines-file: 'CONTRIBUTING.md'
+          comment-identifier: 'general-validator'

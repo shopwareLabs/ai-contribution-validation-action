@@ -1,0 +1,42 @@
+name: Validate Pull Requests - Advanced
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  validate:
+    name: AI Validation with Full Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate contribution with all options
+        uses: shopware/ai-contribution-validation-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          guidelines-file: '.github/CONTRIBUTING.md'
+          gemini-model: 'gemini-1.5-pro'
+          max-pr-size: '3000'
+          fail-on-errors: true
+          comment-identifier: 'strict-validator'
+
+      - name: Additional validation for large PRs
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ This PR requires manual review due to validation issues.'
+            })

@@ -1,0 +1,47 @@
+name: "AI Contribution Validator"
+description: "AI-powered validation of pull requests against contribution guidelines"
+author: "Shopware"
+
+branding:
+  icon: "check-circle"
+  color: "blue"
+
+inputs:
+  github-token:
+    description: "GitHub token for API access"
+    required: true
+  gemini-api-key:
+    description: "Google Gemini API key for AI validation"
+    required: true
+  guidelines-file:
+    description: "Path to contribution guidelines file"
+    required: false
+    default: "CONTRIBUTING.md"
+  gemini-model:
+    description: "Gemini model to use (gemini-1.5-flash or gemini-1.5-pro)"
+    required: false
+    default: "gemini-1.5-flash"
+  max-pr-size:
+    description: "Maximum PR size in lines of code"
+    required: false
+    default: "5000"
+  fail-on-errors:
+    description: "Whether to fail the action on validation errors"
+    required: false
+    default: "false"
+  comment-identifier:
+    description: "Unique identifier for PR comments"
+    required: false
+    default: "ai-validator"
+
+outputs:
+  validation-status:
+    description: "Validation status (success, failure, error)"
+  validation-summary:
+    description: "Summary of validation results"
+  comment-url:
+    description: "URL of the created/updated PR comment"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
