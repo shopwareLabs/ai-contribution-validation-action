@@ -1,19 +1,10 @@
 # AI Contribution Validator Action - Roadmap
 
-## ✅ Phase 0-3: Foundation & MVP (COMPLETED)
+## ✅ Completed Phases
 
-- ✅ Core validation architecture & TDD implementation
-- ✅ GitHub/Gemini API integration with comprehensive error handling
-- ✅ v0.1.0 marketplace release with production documentation
-- ✅ CI/CD pipeline with self-validation and maintenance
-
-## ✅ Phase 3.5: Critical Fixes & Missing Features (COMPLETED)
-
-- ✅ GitHub token validation fix (supports automatic GITHUB_TOKEN)
-- ✅ Debug code removal (invalid createCommitStatus calls)
-- ✅ PR Comment Creation with configurable identifiers and comment-url output
-- ✅ Structured Validation Format with PASS/FAIL/WARNINGS status levels and AI improvement
-  suggestions
+- **Phase 0-3**: Foundation & MVP - Core architecture, API integration, v0.1.0 release
+- **Phase 3.5**: Critical Fixes - Token validation, PR comments, structured validation format
+- **Phase 5.5**: Comment Updates - Idempotent comments, prevents duplicates on force-push
 
 ## 📦 Action Usage
 

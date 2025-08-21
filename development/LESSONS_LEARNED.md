@@ -205,3 +205,46 @@ the username exists or has repository access permissions.
 - Use official documentation over assumptions or examples from other projects
 - Start with minimal required configuration, add optional features incrementally
 - Document configuration decisions and their sources for future reference
+
+## PR Comment Management & Idempotency
+
+### Problem: Duplicate Comments on Force-Push [RESOLVED]
+
+**Issue:** Action creates new comments on every run instead of updating existing ones, leading to
+duplicate validation feedback when PRs are force-pushed or action runs multiple times.
+
+**Root Cause:** Main workflow (index.ts) only calls `createComment()` without checking for existing
+comments, even though GitHubClient has full comment update functionality implemented.
+
+**Solution Implemented:**
+
+- Added conditional comment logic in index.ts orchestration layer
+- Now uses `findCommentByIdentifier()` to check for existing comments before creating new ones
+- Calls `updateComment()` if comment exists, otherwise `createComment()`
+- Includes proper error handling with fallback to create new comment if update fails
+- Comprehensive test coverage with 3 test cases: update existing, create new, fallback on error
+
+**Implementation Details:**
+
+```typescript
+// Check for existing comment before creating a new one
+const existingComment = await githubClient.findCommentByIdentifier(...);
+if (existingComment) {
+  try {
+    commentResult = await githubClient.updateComment(...);
+  } catch (updateError) {
+    // Fallback to create if update fails
+    commentResult = await githubClient.createComment(...);
+  }
+} else {
+  commentResult = await githubClient.createComment(...);
+}
+```
+
+**Prevention Strategy:**
+
+- Always implement idempotent operations for external system interactions
+- Test multi-run scenarios (force-push, re-runs) during development
+- Design workflows to be safe for repeated execution
+- Leverage existing infrastructure before building new solutions
+- Follow TDD to ensure all edge cases are covered

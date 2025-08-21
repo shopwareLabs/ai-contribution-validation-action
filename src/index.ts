@@ -102,15 +102,73 @@ export async function run(): Promise<void> {
     const formatter = new ResultFormatter();
     const formattedResult = formatter.formatToMarkdown(validationResult);
 
-    // Post comment with configurable identifier to enable multiple validators
-    // to coexist without conflicts. The identifier allows later updates/removal.
-    const commentResult = await githubClient.createComment(
-      owner,
-      repo,
-      prNumber,
-      formattedResult,
-      commentIdentifier
-    );
+    // Idempotent comment management: prevents duplicate comments on force-push/re-runs
+    // Design rationale: GitHub Actions often run multiple times (e.g., push, then force-push),
+    // and without this logic, each run would create a new comment, cluttering the PR interface.
+    // The HTML comment identifier pattern allows us to track and update specific comments
+    // while supporting multiple validators with different identifiers in the same PR.
+    let commentResult;
+    try {
+      const existingComment = await githubClient.findCommentByIdentifier(
+        owner,
+        repo,
+        prNumber,
+        commentIdentifier
+      );
+
+      if (existingComment) {
+        core.info(
+          `Found existing comment with ID ${existingComment.id}, updating...`
+        );
+        // Nested try-catch pattern handles the edge case where a comment exists
+        // but becomes invalid between find and update (e.g., user deleted it).
+        // This ensures the action always succeeds in posting feedback.
+        try {
+          commentResult = await githubClient.updateComment(
+            owner,
+            repo,
+            existingComment.id,
+            formattedResult,
+            commentIdentifier
+          );
+        } catch (updateError) {
+          // Graceful degradation: if update fails, create new comment rather than failing
+          core.warning(
+            `Failed to update comment: ${updateError}, creating new comment instead`
+          );
+          commentResult = await githubClient.createComment(
+            owner,
+            repo,
+            prNumber,
+            formattedResult,
+            commentIdentifier
+          );
+        }
+      } else {
+        // Standard path for first-time validation
+        core.info('No existing comment found, creating new comment...');
+        commentResult = await githubClient.createComment(
+          owner,
+          repo,
+          prNumber,
+          formattedResult,
+          commentIdentifier
+        );
+      }
+    } catch (error) {
+      // Outer catch ensures action never fails due to comment management issues.
+      // This could occur if GitHub API is degraded or permissions are restricted.
+      core.warning(
+        `Error checking for existing comment: ${error}, creating new comment`
+      );
+      commentResult = await githubClient.createComment(
+        owner,
+        repo,
+        prNumber,
+        formattedResult,
+        commentIdentifier
+      );
+    }
 
     // Construct GitHub comment URL following standard GitHub URL patterns
     // This enables CI/CD systems to link directly to the posted feedback
