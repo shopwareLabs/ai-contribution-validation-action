@@ -57,6 +57,10 @@ export interface PRData {
   author?: string; // GitHub user login for bot exclusion feature
 }
 
+/**
+ * GitHub API client with retry logic and error handling.
+ * Provides PR data extraction, comment management, and commit status updates.
+ */
 export class GitHubClient {
   readonly #octokit: ReturnType<typeof getOctokit>;
 
@@ -65,13 +69,7 @@ export class GitHubClient {
       throw new Error('GitHub token is required');
     }
 
-    // Basic GitHub token format validation
-    // GitHub tokens can be: ghp_, gho_, ghu_, ghs_, ghr_, github_pat_
-    const tokenPattern =
-      /^(ghp_|gho_|ghu_|ghs_|ghr_|github_pat_)[a-zA-Z0-9_]+$/;
-    if (!tokenPattern.test(token)) {
-      throw new Error('Invalid GitHub token format');
-    }
+    // Accept any non-empty token - GitHub API validates authenticity
 
     this.#octokit = getOctokit(token);
   }

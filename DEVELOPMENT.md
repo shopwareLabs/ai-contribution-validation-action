@@ -245,6 +245,29 @@ skip-authors: 'dependabot[bot],renovate[bot],github-actions[bot]'
 3. **Flexibility**: Supports any bot by GitHub username without code changes
 4. **Transparency**: Clear logging when validation is skipped
 
+### GitHub Token Flexibility
+
+**Decision**: Remove strict token format validation to support GitHub's automatic GITHUB_TOKEN.
+
+**Rationale**: GitHub Actions provides an automatic GITHUB*TOKEN that doesn't follow classic token
+patterns (ghp*, github*pat*). Strict regex validation prevented using this convenient automatic
+token, forcing users to create PATs unnecessarily. The GitHub API already validates token
+authenticity and provides clear error messages for invalid tokens.
+
+**Implementation**:
+
+- Removed regex validation for token formats in both Validator and GitHubClient classes
+- Accept any non-empty string as token, delegating validation to GitHub API
+- Updated workflow to use `${{ github.token }}` instead of requiring secrets.GITHUB_TOKEN
+- Preserved clear error messages from API for authentication failures
+
+**Benefits**:
+
+1. **Simplicity**: Users can use automatic GITHUB_TOKEN without configuration
+2. **Security**: No need to create and manage PATs for basic operations
+3. **Compatibility**: Works with all GitHub token types (classic, fine-grained, automatic)
+4. **Future-proof**: Supports new token formats without code changes
+
 ## Project Structure
 
 ```

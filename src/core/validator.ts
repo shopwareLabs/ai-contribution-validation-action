@@ -28,7 +28,8 @@ export interface ValidationReport {
 }
 
 /**
- * Main validator orchestrator class
+ * Orchestrates PR validation workflow with GitHub and AI clients.
+ * Uses dependency injection for testing and graceful degradation.
  */
 export class Validator {
   private readonly _config: ValidationConfig;
@@ -37,11 +38,7 @@ export class Validator {
 
   /**
    * Creates validator with configuration and optional dependency injection.
-   *
-   * Optional clients enable graceful degradation: the validator can operate
-   * with reduced functionality if GitHub or AI services are unavailable,
-   * rather than failing completely.
-   * Token validation covers both classic (ghp_) and fine-grained (github_pat_) formats.
+   * Optional clients enable graceful degradation when services are unavailable.
    */
   constructor(
     config: ValidationConfig,
@@ -52,11 +49,7 @@ export class Validator {
       throw new Error('Invalid configuration');
     }
 
-    // GitHub token validation - covers classic and fine-grained tokens
-    const githubTokenPattern = /^(ghp_|github_pat_)[A-Za-z0-9_]{40,255}$/;
-    if (!githubTokenPattern.test(config.githubToken)) {
-      throw new Error('Invalid GitHub token format');
-    }
+    // Accept any non-empty token - GitHub API validates authenticity
 
     this._config = config;
     this._githubClient = githubClient;
@@ -126,25 +119,9 @@ export class Validator {
         );
         const validationResult =
           await this._geminiClient.validateContent(prompt);
-        await this._githubClient.createCommitStatus(
-          owner,
-          repo,
-          'HEAD',
-          'success',
-          'Test',
-          'ai-validator'
-        );
         return validationResult;
       }
 
-      await this._githubClient.createCommitStatus(
-        owner,
-        repo,
-        'HEAD',
-        'success',
-        'Test',
-        'ai-validator'
-      );
       return Promise.resolve({
         valid: true,
         suggestions: [],

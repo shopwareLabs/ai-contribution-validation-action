@@ -53,10 +53,11 @@ describe('GitHubClient', () => {
       expect(() => new GitHubClient('')).toThrow('GitHub token is required');
     });
 
-    it('should throw error with invalid token format', () => {
-      expect(() => new GitHubClient('invalid-token')).toThrow(
-        'Invalid GitHub token format'
-      );
+    it('should accept any non-empty token format', () => {
+      // Token validation is now handled by GitHub API, not client-side
+      expect(() => new GitHubClient('invalid-token')).not.toThrow();
+      expect(() => new GitHubClient('ghp_valid_token_123')).not.toThrow();
+      expect(() => new GitHubClient('ghs_action_token')).not.toThrow();
     });
   });
 

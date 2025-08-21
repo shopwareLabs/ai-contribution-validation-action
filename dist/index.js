@@ -139,10 +139,6 @@ class Validator {
         if (!config.githubToken || !config.geminiApiKey || !config.guidelinesFile) {
             throw new Error('Invalid configuration');
         }
-        const githubTokenPattern = /^(ghp_|github_pat_)[A-Za-z0-9_]{40,255}$/;
-        if (!githubTokenPattern.test(config.githubToken)) {
-            throw new Error('Invalid GitHub token format');
-        }
         this._config = config;
         this._githubClient = githubClient;
         this._geminiClient = geminiClient;
@@ -176,10 +172,8 @@ class Validator {
             if (this._geminiClient) {
                 const prompt = this._geminiClient.generateValidationPrompt(prData, this._config.guidelinesFile);
                 const validationResult = await this._geminiClient.validateContent(prompt);
-                await this._githubClient.createCommitStatus(owner, repo, 'HEAD', 'success', 'Test', 'ai-validator');
                 return validationResult;
             }
-            await this._githubClient.createCommitStatus(owner, repo, 'HEAD', 'success', 'Test', 'ai-validator');
             return Promise.resolve({
                 valid: true,
                 suggestions: [],
@@ -209,10 +203,6 @@ class GitHubClient {
     constructor(token) {
         if (!token) {
             throw new Error('GitHub token is required');
-        }
-        const tokenPattern = /^(ghp_|gho_|ghu_|ghs_|ghr_|github_pat_)[a-zA-Z0-9_]+$/;
-        if (!tokenPattern.test(token)) {
-            throw new Error('Invalid GitHub token format');
         }
         this.#octokit = (0, github_1.getOctokit)(token);
     }

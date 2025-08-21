@@ -7,26 +7,35 @@
 - ✅ v0.1.0 marketplace release with production documentation
 - ✅ CI/CD pipeline with self-validation and maintenance
 
-## 📦 Action Usage (MVP)
+## 🔧 Phase 3.5: Critical Fixes & Missing Features (CURRENT)
+
+### ✅ Completed
+
+- GitHub token validation fix (supports automatic GITHUB_TOKEN)
+- Debug code removal (invalid createCommitStatus calls)
+
+### 🎯 Next Priority: PR Comment Creation
+
+**Problem**: Action validates but doesn't post feedback as PR comments  
+**Solution**: Import ResultFormatter, use GitHubClient.createComment(), set comment-url output
+
+**Quick Start:**
+
+```bash
+npm run test:watch  # Start TDD mode
+npm run validate    # Run all checks
+npm run build       # Build distribution
+```
+
+## 📦 Action Usage
 
 ### Basic Usage
 
 ```yaml
-name: Validate Contributions
-on:
-  pull_request:
-    types: [opened, synchronize, edited]
-
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: shopware/ai-contribution-validator@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+- uses: shopware/ai-contribution-validator@v1
+  with:
+    github-token: ${{ github.token }}
+    gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
 ```
 
 ### Advanced Configuration
@@ -34,187 +43,68 @@ jobs:
 ```yaml
 - uses: shopware/ai-contribution-validator@v1
   with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
+    github-token: ${{ github.token }}
     gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
-    gemini-model: 'gemini-1.5-flash' # or gemini-1.5-pro
+    gemini-model: 'gemini-1.5-flash'
     guidelines-file: '.github/CONTRIBUTING.md'
-    max-pr-size: 5000 # lines of code
-    fail-on-errors: false # don't block PR
-    comment-identifier: 'ai-validator' # for comment updates
-    skip-authors: 'dependabot[bot],renovate[bot]' # Skip bot PRs (v0.1.1+)
+    max-pr-size: 5000
+    fail-on-errors: false
+    comment-identifier: 'ai-validator'
+    skip-authors: 'dependabot[bot],renovate[bot]'
 ```
 
 ## 🎯 Phase 4: Enhanced Features
 
-### Features to Add
-
-1. **Multi-AI Provider Support**
-   - OpenAI GPT integration
-   - Anthropic Claude integration
-   - Provider fallback mechanism
-
-2. **Advanced PR Analysis**
-   - Diff analysis with context
-   - File change patterns
-   - Test coverage detection
-
-3. **Customization**
-   - Custom validation rules (JSON/YAML)
-   - Configurable prompts
-   - Severity levels (error/warning/info)
-
-```yaml
-# With custom rules
-- uses: shopware/ai-contribution-validator@v2
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    ai-provider: 'openai' # or 'gemini', 'anthropic'
-    ai-api-key: ${{ secrets.OPENAI_API_KEY }}
-    custom-rules: |
-      {
-        "commit_format": "^(feat|fix|docs|style|refactor|test|chore)\\(.+\\): .+",
-        "pr_size_limit": 500,
-        "require_tests": true,
-        "require_description_length": 100
-      }
-```
+1. **Multi-AI Provider Support** - OpenAI, Anthropic Claude integration
+2. **Advanced PR Analysis** - Diff context, file patterns, test coverage
+3. **Customization** - Custom rules (JSON/YAML), configurable prompts
 
 ## 📊 Phase 5: Enterprise Features
 
-### Advanced Capabilities
-
-1. **Performance Optimization**
-   - Response caching
-   - Batch processing for large PRs
-   - Incremental validation
-
-2. **Analytics & Reporting**
-   - Validation metrics collection
-   - Cost tracking per provider
-   - Team compliance dashboard
-
-3. **Integration Features**
-   - Webhook support
-   - Slack/Teams notifications
-   - JIRA/Linear ticket linking
-
-```yaml
-# Enterprise usage
-- uses: shopware/ai-contribution-validator@v3
-  with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    ai-api-key: ${{ secrets.AI_API_KEY }}
-    enable-analytics: true
-    webhook-url: ${{ secrets.WEBHOOK_URL }}
-    cache-duration: 3600 # seconds
-    notification-channels: 'slack,email'
-```
+1. **Performance** - Response caching, batch processing, incremental validation
+2. **Analytics** - Metrics collection, cost tracking, compliance dashboard
+3. **Integration** - Webhooks, Slack/Teams notifications, JIRA linking
 
 ## 🔄 Phase 6: Marketplace & Community
 
-### Preparation Steps
-
-1. **Documentation**
-   - README with badges
-   - CHANGELOG.md
-   - Migration guide
-
-2. **Testing**
-   - Unit tests with Jest
-   - Integration tests
-   - Example repositories
-
-3. **Distribution**
-   - GitHub Marketplace listing
-   - Semantic versioning
-   - Automated releases
+1. **Documentation** - README badges, CHANGELOG, migration guide
+2. **Testing** - Unit tests, integration tests, example repositories
+3. **Distribution** - Marketplace listing, semantic versioning, automated releases
 
 ## 🎓 Usage Patterns
 
 ### Organization-Wide Deployment
 
 ```yaml
-# .github/workflows/org-validator.yml
-name: Organization Standards
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: shopware/ai-contribution-validator@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          gemini-api-key: ${{ secrets.ORG_GEMINI_KEY }}
-          guidelines-file: 'https://raw.githubusercontent.com/org/standards/main/CONTRIBUTING.md'
-          fail-on-errors: true
+- uses: shopware/ai-contribution-validator@v1
+  with:
+    github-token: ${{ github.token }}
+    gemini-api-key: ${{ secrets.ORG_GEMINI_KEY }}
+    guidelines-file: 'https://raw.githubusercontent.com/org/standards/main/CONTRIBUTING.md'
+    fail-on-errors: true
 ```
 
 ### Conditional Validation
 
 ```yaml
-# Only validate external contributions
 jobs:
   validate:
     if: github.event.pull_request.head.repo.fork == true
-    runs-on: ubuntu-latest
     steps:
       - uses: shopware/ai-contribution-validator@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
 ```
 
 ### Multi-Language Projects
 
 ```yaml
-# Different rules per language
 - uses: shopware/ai-contribution-validator@v1
   with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
     custom-rules: |
       {
-        "php": {
-          "style": "PSR-12",
-          "require_tests": true
-        },
-        "typescript": {
-          "style": "eslint-config-shopware",
-          "require_types": true
-        }
+        "php": { "style": "PSR-12", "require_tests": true },
+        "typescript": { "style": "eslint-config-shopware", "require_types": true }
       }
 ```
-
-## 📋 Current Status & Next Priorities
-
-### 🎯 Immediate Priorities
-
-1. **v0.1.0 Release** - Complete initial stable release
-2. **GitHub Marketplace Submission** - Submit to marketplace after v0.1.0
-3. **v0.2.0 Planning** - Multi-AI provider support
-4. **Community Growth** - Documentation and examples
-5. **Performance Optimization** - Caching and batch processing
-
-## 🚀 Quick-Start Commands
-
-```bash
-# Development
-npm run validate    # Run all checks
-npm run test:watch  # TDD mode
-
-# Local testing
-act pull_request -e test/fixtures/pr-event.json
-act --env-file .env.act
-
-# Release
-git tag -a v1.0.0 -m "Release description"
-git push origin main --tags
-```
-
----
 
 ## 📚 References
 

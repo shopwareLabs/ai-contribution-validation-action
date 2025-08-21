@@ -62,16 +62,17 @@ describe('Validator', () => {
       }).toThrow('Invalid configuration');
     });
 
-    it('should throw error with invalid GitHub token format', () => {
+    it('should accept any non-empty GitHub token format', () => {
       const config = {
         githubToken: 'invalid-token',
         geminiApiKey: 'test-api-key',
         guidelinesFile: 'CONTRIBUTING.md',
       };
 
+      // Token validation is now handled by GitHub API, not client-side
       expect(() => {
         new Validator(config);
-      }).toThrow('Invalid GitHub token format');
+      }).not.toThrow('Invalid GitHub token format');
     });
 
     it('should accept valid GitHub token formats', () => {
@@ -213,10 +214,80 @@ describe('Validator', () => {
       expect(mockGeminiClient.validateContent).toHaveBeenCalledWith(
         'Generated prompt'
       );
-      expect(mockGitHubClient.createCommitStatus).toHaveBeenCalled();
+      // createCommitStatus should no longer be called since debug code was removed
+      expect(mockGitHubClient.createCommitStatus).not.toHaveBeenCalled();
 
       // Verify result
       expect(result).toEqual(mockValidationResult);
+    });
+
+    it('should not call createCommitStatus with invalid placeholder values', async () => {
+      // This test ensures we don't have debug/test code with hardcoded 'HEAD' and 'Test' values
+      const mockPRData = {
+        number: 123,
+        title: 'Test PR',
+        body: 'Test description',
+        commits: [
+          {
+            sha: 'abc123def456',
+            message: 'Test commit',
+            author: {
+              name: 'Test',
+              email: 'test@example.com',
+              date: '2025-01-01',
+            },
+          },
+        ],
+        files: [],
+        diffStats: {
+          totalAdditions: 0,
+          totalDeletions: 0,
+          totalChanges: 0,
+          filesChanged: 0,
+        },
+        author: 'testuser',
+      };
+
+      const mockValidationResult = { valid: true, suggestions: [] };
+
+      vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
+      vi.mocked(mockGeminiClient.generateValidationPrompt).mockReturnValue(
+        'Generated prompt'
+      );
+      vi.mocked(mockGeminiClient.validateContent).mockResolvedValue(
+        mockValidationResult
+      );
+      vi.mocked(mockGitHubClient.createCommitStatus).mockResolvedValue({
+        id: 1,
+        state: 'success',
+        description: 'Validation complete',
+        context: 'ai-validator',
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      });
+
+      const config = {
+        githubToken: 'ghp_1234567890abcdef1234567890abcdef12345678',
+        geminiApiKey: 'test-api-key',
+        guidelinesFile: 'CONTRIBUTING.md',
+      };
+
+      const validator = new Validator(
+        config,
+        mockGitHubClient,
+        mockGeminiClient
+      );
+      await validator.validate('owner', 'repo', 123);
+
+      // Ensure createCommitStatus is NOT called with invalid placeholder values
+      expect(mockGitHubClient.createCommitStatus).not.toHaveBeenCalledWith(
+        'owner',
+        'repo',
+        'HEAD',
+        'success',
+        'Test',
+        'ai-validator'
+      );
     });
   });
 
@@ -473,15 +544,8 @@ describe('Validator', () => {
         suggestions: [],
       });
 
-      // Should still create commit status
-      expect(mockGitHubClient.createCommitStatus).toHaveBeenCalledWith(
-        'owner',
-        'repo',
-        'HEAD',
-        'success',
-        'Test',
-        'ai-validator'
-      );
+      // createCommitStatus should not be called since debug code was removed
+      expect(mockGitHubClient.createCommitStatus).not.toHaveBeenCalled();
     });
 
     it('should handle validation without GitHub client (minimal mode)', async () => {

@@ -30,7 +30,7 @@ jobs:
       - name: Validate PR with AI
         uses: ./
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
           guidelines-file: "CONTRIBUTING.md"
           gemini-model: "gemini-1.5-flash"
