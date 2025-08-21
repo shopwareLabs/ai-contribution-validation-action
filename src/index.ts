@@ -93,11 +93,12 @@ export async function run(): Promise<void> {
     core.info(`Validating PR #${prNumber} in ${owner}/${repo}`);
 
     // Execute validation workflow with extracted context
+    // Returns structured format with status, issues, and AI improvement suggestions
     const validationResult = await validator.validate(owner, repo, prNumber);
 
     // Create PR comment with validation result
-    // ResultFormatter is instantiated per-request to maintain stateless design
-    // and avoid shared state between concurrent validation workflows
+    // ResultFormatter converts structured data into rich markdown, separating
+    // issues (problems to fix) from improvements (AI suggestions for enhancement)
     const formatter = new ResultFormatter();
     const formattedResult = formatter.formatToMarkdown(validationResult);
 
@@ -117,11 +118,11 @@ export async function run(): Promise<void> {
     core.setOutput('comment-url', commentUrl);
 
     // Report results using appropriate GitHub Actions logging levels
-    if (validationResult.valid) {
+    if (validationResult.status === 'PASS') {
       core.info('Validation completed successfully - PR meets guidelines');
     } else {
       core.warning(
-        `Validation found issues: ${validationResult.suggestions.join(', ')}`
+        `Validation found issues: ${validationResult.issues.join(', ')}`
       );
     }
   } catch (error) {

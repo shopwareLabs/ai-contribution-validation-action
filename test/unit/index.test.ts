@@ -113,15 +113,34 @@ describe('Entry Point', () => {
       })
     );
 
-    // Mock validator.validate to return a successful validation
+    // Mock validator.validate to return a successful validation with new structured format
     const mockValidate = vi.fn().mockResolvedValue({
-      valid: true,
-      suggestions: [],
+      status: 'PASS',
+      issues: [],
+      improved_title: '',
+      improved_commits: '',
+      improved_description: '',
     });
     vi.mocked(Validator).mockImplementation(
       () =>
         ({
           validate: mockValidate,
+        }) as any
+    );
+
+    // Mock ResultFormatter
+    vi.mocked(ResultFormatter).mockImplementation(
+      () =>
+        ({
+          formatToMarkdown: vi.fn().mockReturnValue('Formatted result'),
+        }) as any
+    );
+
+    // Mock GitHubClient
+    vi.mocked(GitHubClient).mockImplementation(
+      () =>
+        ({
+          createComment: vi.fn().mockResolvedValue({ id: 123456 }),
         }) as any
     );
 
@@ -156,6 +175,14 @@ describe('Entry Point', () => {
     expect(allCalls.some(call => call.includes('test-owner/test-repo'))).toBe(
       true
     );
+
+    // Verify structured validation result is used correctly
+    expect(mockValidate).toHaveBeenCalledWith('test-owner', 'test-repo', 123);
+    expect(
+      allCalls.some(call =>
+        call.includes('Validation completed successfully - PR meets guidelines')
+      )
+    ).toBe(true);
   });
 
   it('should create PR comment with formatted validation result', async () => {
@@ -180,13 +207,15 @@ describe('Entry Point', () => {
       })
     );
 
-    // Mock validation result with suggestions
+    // Mock validation result with new structured format
     const mockValidationResult = {
-      valid: false,
-      suggestions: [
-        'Commit message format needs improvement',
-        'Add unit tests',
-      ],
+      status: 'FAIL',
+      issues: ['Commit message format needs improvement', 'Add unit tests'],
+      improved_title: 'feat(api): add user authentication endpoint',
+      improved_commits:
+        'feat(api): add user authentication endpoint\n\nImplement OAuth2 authentication with JWT tokens for secure API access.',
+      improved_description:
+        '## What\nAdd user authentication endpoint\n## Why\nSecure API access\n## Testing\nUnit tests included',
     };
 
     // Mock validator.validate to return validation result

@@ -19,11 +19,19 @@ export interface ValidationConfig {
 }
 
 /**
- * Result of a validation operation
+ * Result of a validation operation with structured feedback.
+ *
+ * The improved_* fields enable AI-generated suggestions for better contributions,
+ * providing actionable feedback beyond simple pass/fail status. These fields are
+ * required (not optional) to ensure consistent response structure across all
+ * validation paths, including fallback scenarios.
  */
 export interface ValidationReport {
-  valid: boolean;
-  suggestions: string[];
+  status: 'PASS' | 'FAIL' | 'WARNINGS';
+  issues: string[];
+  improved_title: string;
+  improved_commits: string;
+  improved_description: string;
   skipped?: boolean;
 }
 
@@ -103,10 +111,11 @@ export class Validator {
           .map(a => a.trim());
         if (skipAuthors.includes(prData.author)) {
           return {
-            valid: true,
-            suggestions: [
-              `Validation skipped for automated PR by ${prData.author}`,
-            ],
+            status: 'PASS',
+            issues: [`Validation skipped for automated PR by ${prData.author}`],
+            improved_title: '',
+            improved_commits: '',
+            improved_description: '',
             skipped: true, // Flag enables different handling in CI workflows
           };
         }
@@ -117,19 +126,25 @@ export class Validator {
           prData,
           this._config.guidelinesFile
         );
-        const validationResult =
-          await this._geminiClient.validateContent(prompt);
-        return validationResult;
+        // Return structured format directly from GeminiClient - this maintains
+        // consistency with ValidationReport interface and enables rich feedback
+        return await this._geminiClient.validateContent(prompt);
       }
 
       return Promise.resolve({
-        valid: true,
-        suggestions: [],
+        status: 'PASS',
+        issues: [],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       });
     }
     return Promise.resolve({
-      valid: true,
-      suggestions: [],
+      status: 'PASS',
+      issues: [],
+      improved_title: '',
+      improved_commits: '',
+      improved_description: '',
     });
   }
 }

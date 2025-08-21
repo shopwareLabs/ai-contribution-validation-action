@@ -12,6 +12,8 @@
 - ✅ GitHub token validation fix (supports automatic GITHUB_TOKEN)
 - ✅ Debug code removal (invalid createCommitStatus calls)
 - ✅ PR Comment Creation with configurable identifiers and comment-url output
+- ✅ Structured Validation Format with PASS/FAIL/WARNINGS status levels and AI improvement
+  suggestions
 
 ## 📦 Action Usage
 
@@ -39,49 +41,66 @@
     skip-authors: 'dependabot[bot],renovate[bot]'
 ```
 
-## 🎯 Phase 4: Enhanced Features (CURRENT)
+## 🎯 Phase 4: Validation Scope Refinement (CURRENT)
 
-### Next Priority: Structured JSON Validation Output
+### Next Priority: Text-Format-Only Validation
 
-**Goal**: Replace simple validation results with structured JSON format for better CI/CD integration
-and categorized feedback.
+**Goal**: Refine validation to focus specifically on text format (PR titles, descriptions, commit
+messages) rather than code content analysis, making validation more predictable and objective.
 
 **Quick Start:**
 
 ```bash
-# Review current ValidationResult interface
-# Design structured output schema with categories
-# Update Gemini client and formatter
+# Update generateValidationPrompt() in src/ai/gemini-client.ts
+# Remove code metrics and file change analysis
+# Focus validation criteria on text format only
 ```
 
 **Implementation Plan:**
 
-1. **Structured JSON Output** - Categorized validation results (commits, PR description, code
-   quality, guidelines)
-2. **Severity Levels** - Support for errors, warnings, and suggestions with specific fixes
-3. **CI/CD Integration** - JSON outputs for automation and structured action outputs
-4. **Backward Compatibility** - Maintain existing simple format with feature flag
+1. **Scope Reduction** - Remove code metrics, file changes, and implementation analysis
+2. **Text Focus** - Validate only commit message format, PR title structure, and description
+   completeness
+3. **Prompt Refinement** - Update AI prompts to exclude code quality assessment
+4. **Predictable Results** - Make validation objective and format-focused rather than subjective
 
-_Detailed implementation plan: [STRUCTURED_OUTPUT_PLAN.md](STRUCTURED_OUTPUT_PLAN.md)_
+## 🎯 Phase 4.5: Reliability & Performance
 
-## 🎯 Phase 4.5: Multi-AI Provider Support
+### Exponential Backoff Retry Logic
 
-**Goal**: Extend provider-agnostic AI client interface to support OpenAI and Anthropic Claude
-alongside Gemini.
+**Goal**: Activate the commented-out exponential backoff implementation in GitHubClient to handle
+rate limits gracefully.
 
 **Implementation Plan:**
 
-1. **Multi-AI Provider Support** - OpenAI, Anthropic Claude integration
-2. **Advanced PR Analysis** - Diff context, file patterns, test coverage
-3. **Customization** - Custom rules (JSON/YAML), configurable prompts
+1. **Activate Retry Logic** - Uncomment and integrate existing exponential backoff implementation
+2. **API Integration** - Update createCommitStatus and other methods to use retry logic
+3. **Enhanced Testing** - Verify retry behavior with rate limit simulation
+4. **Performance Optimization** - Fine-tune backoff timing for GitHub Actions constraints
 
-## 📊 Phase 5: Enterprise Features
+## 🎯 Phase 5: Advanced JSON Validation Format
 
-1. **Performance** - Response caching, batch processing, incremental validation
-2. **Analytics** - Metrics collection, cost tracking, compliance dashboard
-3. **Integration** - Webhooks, Slack/Teams notifications, JIRA linking
+**Goal**: Extend current structured format with categorized validation results, severity levels, and
+detailed analytics.
 
-## 🔄 Phase 6: Marketplace & Community
+**Implementation Plan:**
+
+1. **Categorized Validation** - Separate analysis for commits, PR description, code quality,
+   guidelines
+2. **Severity Levels** - Support for errors, warnings, and suggestions with specific fixes
+3. **Analytics Integration** - Quality scores, progress tracking, rule effectiveness metrics
+4. **Enhanced CI/CD** - JSON outputs for automation and conditional workflow logic
+
+## 📊 Phase 6: Enterprise Features
+
+1. **Multi-AI Provider Support** - OpenAI, Anthropic Claude integration alongside Gemini
+2. **Performance** - Response caching, batch processing, incremental validation
+3. **Analytics** - Metrics collection, cost tracking, compliance dashboard
+4. **Integration** - Webhooks, Slack/Teams notifications, JIRA linking
+5. **Advanced PR Analysis** - Diff context, file patterns, test coverage
+6. **Customization** - Custom rules (JSON/YAML), configurable prompts
+
+## 🔄 Phase 7: Marketplace & Community
 
 1. **Documentation** - README badges, CHANGELOG, migration guide
 2. **Testing** - Unit tests, integration tests, example repositories

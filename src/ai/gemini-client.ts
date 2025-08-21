@@ -12,8 +12,11 @@ import type { PRData } from '../github/client';
  * cost visibility through token usage metrics.
  */
 interface ValidationResult {
-  valid: boolean;
-  suggestions: string[];
+  status: 'PASS' | 'FAIL' | 'WARNINGS';
+  issues: string[];
+  improved_title: string;
+  improved_commits: string;
+  improved_description: string;
   tokenUsage?: {
     promptTokens: number;
     completionTokens: number;
@@ -97,8 +100,11 @@ Please validate this pull request and provide specific, actionable feedback.`;
       // that expect specific validation responses
       if (prompt.includes('Invalid commit message format')) {
         return {
-          valid: false,
-          suggestions: ['Fix commit message format'],
+          status: 'FAIL',
+          issues: ['Fix commit message format'],
+          improved_title: '',
+          improved_commits: '',
+          improved_description: '',
           tokenUsage: {
             promptTokens: prompt.length / 4,
             completionTokens: 5,
@@ -112,20 +118,41 @@ Please validate this pull request and provide specific, actionable feedback.`;
         model: 'gemini-1.5-flash',
         generationConfig: {
           responseMimeType: 'application/json',
+          // Structured response schema enforces consistent AI output format.
+          // Required fields ensure all validation paths return complete data,
+          // enabling rich feedback even when AI doesn't provide improvements.
           responseSchema: {
             type: SchemaType.OBJECT,
             properties: {
-              valid: {
-                type: SchemaType.BOOLEAN,
-                description: 'Whether the PR follows all guidelines',
+              status: {
+                type: SchemaType.STRING,
+                description: 'Validation status: PASS, FAIL, or WARNINGS',
               },
-              suggestions: {
+              issues: {
                 type: SchemaType.ARRAY,
                 items: { type: SchemaType.STRING },
-                description: 'Specific, actionable improvement recommendations',
+                description: 'Specific issues found with the PR',
+              },
+              improved_title: {
+                type: SchemaType.STRING,
+                description: 'Suggested improved PR title if needed',
+              },
+              improved_commits: {
+                type: SchemaType.STRING,
+                description: 'Suggested improved commit message if needed',
+              },
+              improved_description: {
+                type: SchemaType.STRING,
+                description: 'Suggested improved PR description if needed',
               },
             },
-            required: ['valid', 'suggestions'],
+            required: [
+              'status',
+              'issues',
+              'improved_title',
+              'improved_commits',
+              'improved_description',
+            ],
           },
         },
       });
@@ -133,17 +160,28 @@ Please validate this pull request and provide specific, actionable feedback.`;
       // Create structured validation prompt for AI analysis
       const structuredPrompt = `${prompt}
 
-Return a JSON response analyzing this pull request:
-- "valid": true if the PR follows all guidelines, false if there are issues
-- "suggestions": array of specific, actionable improvements (maximum 3)
+Return a JSON response with this exact structure analyzing this pull request:
+{
+  "status": "PASS" | "FAIL" | "WARNINGS",
+  "issues": ["list of specific issues found"],
+  "improved_title": "suggested improved PR title (empty string if title is fine)",
+  "improved_commits": "suggested improved commit message (empty string if commits are fine)",
+  "improved_description": "suggested improved PR description (empty string if description is fine)"
+}
 
-Focus on:
-1. Commit message format and clarity
-2. PR description completeness
-3. Code organization and file changes
-4. Adherence to the stated guidelines
+Validation criteria:
+1. Commit message format and clarity (conventional commits preferred)
+2. PR title descriptiveness and format
+3. PR description completeness and structure
+4. Code organization and file changes appropriateness
+5. Adherence to the stated guidelines
 
-Be concise and constructive.`;
+Status guidelines:
+- PASS: No issues, follows all guidelines
+- WARNINGS: Minor issues or suggestions for improvement
+- FAIL: Significant issues that need to be addressed
+
+Be specific and constructive in feedback.`;
 
       // Make API call to Gemini
       const result = await model.generateContent(structuredPrompt);
@@ -162,15 +200,23 @@ Be concise and constructive.`;
       const validationResult = JSON.parse(jsonText);
 
       return {
-        valid: validationResult.valid,
-        suggestions: validationResult.suggestions ?? [],
+        status: validationResult.status ?? 'FAIL',
+        issues: validationResult.issues ?? [],
+        improved_title: validationResult.improved_title ?? '',
+        improved_commits: validationResult.improved_commits ?? '',
+        improved_description: validationResult.improved_description ?? '',
         tokenUsage,
       };
     } catch (_error) {
       // Graceful error handling - API key issues, timeouts, etc.
+      // Empty strings for improved_* fields maintain interface consistency
+      // while gracefully degrading when AI service is unavailable.
       return {
-        valid: false,
-        suggestions: ['AI validation unavailable - please review manually'],
+        status: 'FAIL',
+        issues: ['AI validation unavailable - please review manually'],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
         tokenUsage: {
           promptTokens: 0,
           completionTokens: 0,

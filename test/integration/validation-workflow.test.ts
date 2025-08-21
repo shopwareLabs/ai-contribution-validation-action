@@ -58,10 +58,11 @@ describe('Integration: Complete Validation Workflow', () => {
       const mockGeminiClient = {
         generateValidationPrompt: vi.fn().mockReturnValue('validation prompt'),
         validateContent: vi.fn().mockResolvedValue({
-          valid: true,
-          suggestions: [
-            'Consider adding unit tests for the new OAuth2 provider',
-          ],
+          status: 'PASS',
+          issues: ['Consider adding unit tests for the new OAuth2 provider'],
+          improved_title: '',
+          improved_commits: '',
+          improved_description: '',
         }),
       } as unknown as GeminiClient;
 
@@ -82,9 +83,15 @@ describe('Integration: Complete Validation Workflow', () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.valid).toBe(true);
-      expect(result.suggestions).toHaveLength(1);
-      expect(result.suggestions[0]).toContain('unit tests');
+      expect(result.status).toBe('PASS');
+      expect(result.issues).toHaveLength(1);
+      expect(result.issues[0]).toContain('unit tests');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
+      expect(result.improved_title).toBe('');
+      expect(result.improved_commits).toBe('');
+      expect(result.improved_description).toBe('');
 
       // Verify workflow orchestration
       expect(mockGitHubClient.extractPRData).toHaveBeenCalledWith(
@@ -148,8 +155,11 @@ describe('Integration: Complete Validation Workflow', () => {
           .fn()
           .mockReturnValue('validation prompt for fix'),
         validateContent: vi.fn().mockResolvedValue({
-          valid: true,
-          suggestions: [],
+          status: 'PASS',
+          issues: [],
+          improved_title: '',
+          improved_commits: '',
+          improved_description: '',
         }),
       } as unknown as GeminiClient;
 
@@ -169,8 +179,8 @@ describe('Integration: Complete Validation Workflow', () => {
       const result = await validator.validate('owner', 'repo', 2);
 
       // Assert
-      expect(result.valid).toBe(true);
-      expect(result.suggestions).toHaveLength(0);
+      expect(result.status).toBe('PASS');
+      expect(result.issues).toHaveLength(0);
 
       // Verify that the GitHub client was called with the correct parameters
       expect(mockGitHubClient.extractPRData).toHaveBeenCalledWith(
