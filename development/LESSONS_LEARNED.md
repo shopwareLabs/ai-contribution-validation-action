@@ -162,3 +162,25 @@ testing capabilities.
 - Set realistic timeout limits based on platform constraints
 - Test timeout scenarios thoroughly
 - Provide clear feedback for timeout conditions
+
+## CI/CD Pipeline Maintenance
+
+### Problem: GitHub Actions Deprecation Warnings
+
+**Issue:** codecov-action@v5 upgrade introduced breaking parameter changes where `file:` was
+deprecated in favor of `files:`, causing workflow warnings.
+
+**Solution:**
+
+- Used Context7 documentation to identify correct parameter mappings
+- Updated `.github/workflows/ci.yml` with `files:` parameter (comma-separated list format)
+- Added codecov-action library ID to CLAUDE.md for consistent future references
+- Documented CI/CD maintenance architectural decision in DEVELOPMENT.md
+
+**Prevention Strategy:**
+
+- Proactive dependency audits using Context7 documentation for accurate parameter mappings
+- Immediate resolution of deprecation warnings to prevent breaking changes
+- Documentation of library IDs in CLAUDE.md for consistent future references
+- Regular monitoring of GitHub Actions ecosystem updates and version pinning with semantic
+  versioning

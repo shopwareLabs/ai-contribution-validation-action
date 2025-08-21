@@ -15,6 +15,7 @@
 '@typescript-eslint/eslint-plugin': '/typescript-eslint/typescript-eslint'
 '@typescript-eslint/parser': '/typescript-eslint/typescript-eslint'
 '@vercel/ncc': '/vercel/ncc'
+'codecov/codecov-action': '/codecov/codecov-action'
 'eslint': '/eslint/eslint'
 'msw': '/mswjs/msw'
 'prettier': '/prettier/prettier'

@@ -155,6 +155,22 @@ changes.
 visibility. Uses markdown blockquote with warning emoji and bold formatting to ensure it stands out
 visually.
 
+### CI/CD Pipeline Maintenance
+
+**Decision**: Proactively upgrade GitHub Actions dependencies and resolve deprecation warnings to
+maintain pipeline reliability.
+
+**Rationale**: GitHub Actions ecosystem evolves rapidly with security improvements and API changes.
+Staying current prevents breaking changes, ensures access to latest features, and maintains
+compatibility with GitHub's platform updates.
+
+**Implementation**:
+
+- Regular dependency audits using Context7 documentation for accurate parameter mappings
+- Immediate resolution of deprecation warnings (e.g., codecov-action@v5 `file` → `files` parameter)
+- Documentation of library IDs in CLAUDE.md for consistent future references
+- Version pinning with semantic versioning to balance stability and feature access
+
 ### Test Coverage Strategy
 
 **Decision**: Target comprehensive coverage focusing on error paths and edge cases rather than just
