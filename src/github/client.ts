@@ -2,14 +2,6 @@ import { getOctokit } from '@actions/github';
 
 /**
  * GitHub API client for pull request validation.
- *
- * Architecture pattern: Private field encapsulation prevents external Octokit access,
- * ensuring controlled API interactions and preventing test pollution. HTML comment
- * identifiers enable idempotent PR comment updates, allowing multiple validators
- * to coexist without conflicts.
- *
- * Performance optimization: Parallel API calls via Promise.all() reduce latency
- * when fetching related GitHub data (PR details, commits, files).
  */
 
 export interface CommitData {
@@ -230,7 +222,8 @@ export class GitHubClient {
     identifier: string
   ): Promise<CommentData> {
     try {
-      // Prepend identifier as HTML comment - invisible to users but trackable
+      // HTML comments are invisible to users but allow programmatic tracking -
+      // this enables idempotent updates without creating duplicate comments
       const commentBody = `<!-- ${identifier} -->\n${body}`;
 
       const response = await this.#octokit.rest.issues.createComment({
@@ -370,8 +363,7 @@ export class GitHubClient {
       if (
         this.isRateLimitError(error as { status?: number; message?: string })
       ) {
-        // Exponential backoff pattern: handles GitHub's rate limiting gracefully
-        // Progressive delays (1s, 2s) give API time to recover while staying within GitHub Actions timeout
+        // 3 attempts with exponential backoff handle transient rate limits gracefully
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
             // Exponential backoff: 1s, 2s delay progression

@@ -116,6 +116,30 @@ npm run package       # Create distribution bundle
 - **Input Validation**: Fail-fast at method boundaries
 - **MSW Integration**: HTTP-level API mocking for integration tests
 
+### AI Client Architecture
+
+**Decision**: Implement provider-agnostic AI client interface with Gemini as primary provider.
+
+**Rationale**: Enable future AI provider swapping (OpenAI, Anthropic) without changing core
+validation logic. Maintain cost visibility and performance monitoring across different providers.
+
+**Implementation Decisions**:
+
+1. **Real API Integration**: Uses GoogleGenerativeAI SDK with Gemini 1.5 Flash model for structured
+   JSON responses, replacing pattern-based stub implementation.
+
+2. **Structured Response Schema**: Uses SchemaType enum to enforce JSON structure with 'valid'
+   boolean and 'suggestions' array, ensuring consistent API responses.
+
+3. **Token Usage Tracking**: Captures promptTokens, completionTokens, and totalTokens from
+   usageMetadata for cost estimation and performance monitoring.
+
+4. **Graceful Error Handling**: Falls back to manual review suggestion when API fails (network,
+   auth, rate limits) to prevent workflow blocking.
+
+5. **Test-Driven Implementation**: Built following TDD with class-based mock pattern to overcome
+   vitest hoisting limitations with complex external dependencies.
+
 ## Architecture Decisions
 
 ### Test Coverage Strategy

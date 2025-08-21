@@ -3,11 +3,6 @@
  *
  * Main orchestrator that coordinates GitHub and AI clients to validate
  * pull requests against contribution guidelines.
- *
- * Architecture pattern: Dependency injection with optional clients enables
- * isolated testing and graceful degradation when services are unavailable.
- * The orchestrator pattern centralizes workflow logic while keeping clients
- * focused on single responsibilities.
  */
 
 import type { GitHubClient } from '../github/client';
@@ -41,8 +36,9 @@ export class Validator {
   /**
    * Creates validator with configuration and optional dependency injection.
    *
-   * Dependencies are optional to enable isolated testing and allow the system
-   * to operate with reduced functionality if external services are unavailable.
+   * Optional clients enable graceful degradation: the validator can operate
+   * with reduced functionality if GitHub or AI services are unavailable,
+   * rather than failing completely.
    * Token validation covers both classic (ghp_) and fine-grained (github_pat_) formats.
    */
   constructor(
@@ -68,10 +64,6 @@ export class Validator {
   /**
    * Orchestrates the complete validation workflow with timeout protection.
    *
-   * Architecture: Promise.race pattern enforces 30-second timeout to prevent
-   * GitHub Actions from hanging on slow AI responses. This ensures reliable
-   * feedback even when external services are experiencing issues.
-   *
    * Planned workflow: extract PR data → generate prompt → validate content → update PR
    * Currently returns stub data pending full client integration.
    */
@@ -80,8 +72,8 @@ export class Validator {
     repo: string,
     prNumber: number
   ): Promise<ValidationReport> {
-    // Timeout protection: GitHub Actions has limited execution time
-    // 30 seconds allows for reasonable AI processing while preventing workflow hangs
+    // 30-second timeout balances AI processing time with GitHub Actions constraints:
+    // enough time for API calls but prevents workflow from hanging indefinitely
     const timeoutPromise = new Promise<never>((_, reject) => {
       global.setTimeout(() => {
         reject(new Error('Validation timeout after 30 seconds'));

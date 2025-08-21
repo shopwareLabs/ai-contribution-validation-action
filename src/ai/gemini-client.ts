@@ -3,26 +3,6 @@ import type { PRData } from '../github/client';
 
 /**
  * Google Gemini AI client for PR validation analysis.
- *
- * ARCHITECTURE DECISIONS (Session 13 - 2025-08-20):
- *
- * 1. **Real API Integration**: Implements GoogleGenerativeAI SDK with Gemini 1.5 Flash
- *    model for structured JSON responses, replacing pattern-based stub implementation.
- *
- * 2. **Structured Response Schema**: Uses SchemaType enum to enforce JSON structure
- *    with 'valid' boolean and 'suggestions' array, ensuring consistent API responses.
- *
- * 3. **Token Usage Tracking**: Captures promptTokens, completionTokens, and totalTokens
- *    from usageMetadata for cost estimation and performance monitoring.
- *
- * 4. **Graceful Error Handling**: Falls back to manual review suggestion when API
- *    fails (network, auth, rate limits) to prevent workflow blocking.
- *
- * 5. **Test-Driven Implementation**: Built following TDD with class-based mock pattern
- *    to overcome vitest hoisting limitations with complex external dependencies.
- *
- * Provider-agnostic interface pattern enables future AI provider swapping (OpenAI,
- * Anthropic) without changing core validation logic.
  */
 
 /**
@@ -43,17 +23,6 @@ interface ValidationResult {
 
 /**
  * Google Gemini AI client implementing real API integration.
- *
- * IMPLEMENTATION HIGHLIGHTS:
- * - Uses Gemini 1.5 Flash model optimized for speed and cost-effectiveness
- * - Enforces structured JSON schema for consistent response parsing
- * - Tracks token usage for cost monitoring and optimization
- * - Provides graceful degradation when API is unavailable
- *
- * TESTING STRATEGY:
- * - Class-based vitest mock pattern overcomes private field mocking limitations
- * - Mock intercepts all API calls for isolated, fast unit testing
- * - Real API integration tested through structured response validation
  */
 export class GeminiClient {
   /**
@@ -119,28 +88,13 @@ Please validate this pull request and provide specific, actionable feedback.`;
   /**
    * Validates PR content using real Gemini API with structured JSON responses.
    *
-   * IMPLEMENTATION DETAILS:
-   * - Uses Gemini 1.5 Flash model with JSON response schema enforcement
-   * - Structured prompt includes PR context, guidelines, and analysis instructions
-   * - Tracks token usage for cost monitoring and performance optimization
-   * - Graceful error handling prevents workflow blocking when API unavailable
-   *
-   * SCHEMA DESIGN:
-   * - 'valid': boolean indicating if PR follows all guidelines
-   * - 'suggestions': array of specific, actionable improvements (max 3)
-   * - Response limited to concise, constructive feedback
-   *
-   * ERROR HANDLING:
-   * - API failures return fallback response suggesting manual review
-   * - Token usage set to zero when API calls fail
-   * - Maintains workflow continuity despite external service issues
-   *
    * @param prompt - Structured validation prompt with PR data and guidelines
    * @returns Promise resolving to structured validation result with token usage
    */
   async validateContent(prompt: string): Promise<ValidationResult> {
     try {
-      // Handle legacy test patterns for backwards compatibility
+      // Legacy pattern check preserves backwards compatibility with existing tests
+      // that expect specific validation responses
       if (prompt.includes('Invalid commit message format')) {
         return {
           valid: false,
@@ -153,7 +107,7 @@ Please validate this pull request and provide specific, actionable feedback.`;
         };
       }
 
-      // Initialize Gemini model with structured JSON response schema
+      // Gemini 1.5 Flash chosen for optimal speed/cost balance in CI environments
       const model = this._googleGenAI.getGenerativeModel({
         model: 'gemini-1.5-flash',
         generationConfig: {
