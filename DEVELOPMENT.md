@@ -96,7 +96,6 @@ npm run package       # Create distribution bundle
 
 ## Documentation Files
 
-- **development/SESSIONS.md**: Development session history
 - **development/LESSONS_LEARNED.md**: Technical problems and solutions
 
 ## Architecture
