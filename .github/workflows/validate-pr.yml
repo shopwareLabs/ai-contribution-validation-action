@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Use the local action (./.) to validate this repository's own PRs
       # This tests the action in its exact deployment scenario
