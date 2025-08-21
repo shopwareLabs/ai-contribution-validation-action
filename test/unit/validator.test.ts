@@ -220,6 +220,112 @@ describe('Validator', () => {
     });
   });
 
+  describe('bot exclusion', () => {
+    it('should skip validation for dependabot PRs when configured', async () => {
+      const config = {
+        githubToken: 'ghp_1234567890abcdef1234567890abcdef12345678',
+        geminiApiKey: 'test-api-key',
+        guidelinesFile: 'CONTRIBUTING.md',
+        skipAuthors: 'dependabot[bot],renovate[bot]',
+      };
+
+      const mockPRData = {
+        number: 123,
+        title: 'chore(deps): bump typescript from 5.0.0 to 5.1.0',
+        body: 'Bumps typescript from 5.0.0 to 5.1.0',
+        commits: [],
+        files: [],
+        diffStats: {
+          totalAdditions: 10,
+          totalDeletions: 5,
+          totalChanges: 15,
+          filesChanged: 2,
+        },
+        author: 'dependabot[bot]',
+      };
+
+      vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
+
+      const validator = new Validator(
+        config,
+        mockGitHubClient,
+        mockGeminiClient
+      );
+
+      const result = await validator.validate('owner', 'repo', 123);
+
+      expect(result.valid).toBe(true);
+      expect(result.skipped).toBe(true);
+      expect(result.suggestions).toContain(
+        'Validation skipped for automated PR by dependabot[bot]'
+      );
+
+      // Should not call AI validation
+      expect(mockGeminiClient.generateValidationPrompt).not.toHaveBeenCalled();
+      expect(mockGeminiClient.validateContent).not.toHaveBeenCalled();
+    });
+
+    it('should validate normally when author not in skip list', async () => {
+      const config = {
+        githubToken: 'ghp_1234567890abcdef1234567890abcdef12345678',
+        geminiApiKey: 'test-api-key',
+        guidelinesFile: 'CONTRIBUTING.md',
+        skipAuthors: 'dependabot[bot]',
+      };
+
+      const mockPRData = {
+        number: 123,
+        title: 'feat: add new feature',
+        body: 'This PR adds a new feature',
+        commits: [],
+        files: [],
+        diffStats: {
+          totalAdditions: 10,
+          totalDeletions: 5,
+          totalChanges: 15,
+          filesChanged: 2,
+        },
+        author: 'human-developer',
+      };
+
+      const mockValidationResult = {
+        valid: false,
+        suggestions: ['Add unit tests', 'Update documentation'],
+      };
+
+      vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
+      vi.mocked(mockGeminiClient.generateValidationPrompt).mockReturnValue(
+        'Generated prompt'
+      );
+      vi.mocked(mockGeminiClient.validateContent).mockResolvedValue(
+        mockValidationResult
+      );
+      vi.mocked(mockGitHubClient.createCommitStatus).mockResolvedValue({
+        id: 1,
+        state: 'success',
+        description: 'Validation complete',
+        context: 'ai-validator',
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      });
+
+      const validator = new Validator(
+        config,
+        mockGitHubClient,
+        mockGeminiClient
+      );
+
+      const result = await validator.validate('owner', 'repo', 123);
+
+      expect(result.skipped).toBeUndefined();
+      expect(result).toEqual(mockValidationResult);
+
+      // Should call normal AI validation
+      expect(mockGeminiClient.generateValidationPrompt).toHaveBeenCalled();
+      expect(mockGeminiClient.validateContent).toHaveBeenCalled();
+    });
+  });
+
   describe('timeout handling', () => {
     it(
       'should timeout validation after 30 seconds',

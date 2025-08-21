@@ -15,6 +15,7 @@ export interface ValidationConfig {
   githubToken: string;
   geminiApiKey: string;
   guidelinesFile: string;
+  skipAuthors?: string;
 }
 
 /**
@@ -23,6 +24,7 @@ export interface ValidationConfig {
 export interface ValidationReport {
   valid: boolean;
   suggestions: string[];
+  skipped?: boolean;
 }
 
 /**
@@ -98,6 +100,24 @@ export class Validator {
         repo,
         prNumber
       );
+
+      // Bot exclusion pattern: Skip AI validation for automated PRs
+      // This prevents dependency bots from failing validation due to different
+      // commit formats and contribution patterns that don't apply to automated updates
+      if (this._config.skipAuthors && prData.author) {
+        const skipAuthors = this._config.skipAuthors
+          .split(',')
+          .map(a => a.trim());
+        if (skipAuthors.includes(prData.author)) {
+          return {
+            valid: true,
+            suggestions: [
+              `Validation skipped for automated PR by ${prData.author}`,
+            ],
+            skipped: true, // Flag enables different handling in CI workflows
+          };
+        }
+      }
 
       if (this._geminiClient) {
         const prompt = this._geminiClient.generateValidationPrompt(

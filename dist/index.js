@@ -159,6 +159,20 @@ class Validator {
     async performValidation(owner, repo, prNumber) {
         if (this._githubClient) {
             const prData = await this._githubClient.extractPRData(owner, repo, prNumber);
+            if (this._config.skipAuthors && prData.author) {
+                const skipAuthors = this._config.skipAuthors
+                    .split(',')
+                    .map(a => a.trim());
+                if (skipAuthors.includes(prData.author)) {
+                    return {
+                        valid: true,
+                        suggestions: [
+                            `Validation skipped for automated PR by ${prData.author}`,
+                        ],
+                        skipped: true,
+                    };
+                }
+            }
             if (this._geminiClient) {
                 const prompt = this._geminiClient.generateValidationPrompt(prData, this._config.guidelinesFile);
                 const validationResult = await this._geminiClient.validateContent(prompt);
@@ -265,6 +279,7 @@ class GitHubClient {
                 commits,
                 files,
                 diffStats,
+                author: prResponse.data.user?.login,
             };
         }
         catch (error) {
@@ -474,11 +489,13 @@ async function run() {
         const githubToken = core.getInput('github-token');
         const geminiApiKey = core.getInput('gemini-api-key');
         const guidelinesFile = core.getInput('guidelines-file') || 'CONTRIBUTING.md';
+        const skipAuthors = core.getInput('skip-authors');
         core.info('Creating validator with GitHub and Gemini clients...');
         const config = {
             githubToken,
             geminiApiKey,
             guidelinesFile,
+            skipAuthors,
         };
         const githubClient = new client_1.GitHubClient(githubToken);
         const geminiClient = new gemini_client_1.GeminiClient(geminiApiKey);

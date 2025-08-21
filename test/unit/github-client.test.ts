@@ -153,6 +153,31 @@ describe('GitHubClient', () => {
     });
   });
 
+  describe('PR author extraction', () => {
+    it('should extract PR author from GitHub API response', async () => {
+      // Mock GitHub API responses
+      mockPullsGet.mockResolvedValue({
+        data: {
+          number: 123,
+          title: 'Test PR',
+          body: 'Test description',
+          user: {
+            login: 'dependabot[bot]',
+          },
+        },
+      });
+      mockPullsListCommits.mockResolvedValue({ data: [] });
+      mockPullsListFiles.mockResolvedValue({ data: [] });
+
+      const client = new GitHubClient('ghp_valid_token_123');
+      const prData = await client.extractPRData('owner', 'repo', 123);
+
+      expect(prData.author).toBeDefined();
+      expect(typeof prData.author).toBe('string');
+      expect(prData.author).toBe('dependabot[bot]');
+    });
+  });
+
   describe('enhanced PR data extraction', () => {
     it('should extract commit information from PR', async () => {
       const client = new GitHubClient('ghp_valid_token_123');

@@ -36,6 +36,7 @@ describe('Entry Point', () => {
         ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
         ['gemini-api-key', 'test-gemini-api-key'],
         ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
       ]);
       return inputs.get(name) ?? '';
     });
@@ -54,6 +55,7 @@ describe('Entry Point', () => {
     expect(core.getInput).toHaveBeenCalledWith('github-token');
     expect(core.getInput).toHaveBeenCalledWith('gemini-api-key');
     expect(core.getInput).toHaveBeenCalledWith('guidelines-file');
+    expect(core.getInput).toHaveBeenCalledWith('skip-authors');
   });
 
   it('should orchestrate full validation workflow with clients', async () => {
@@ -63,6 +65,7 @@ describe('Entry Point', () => {
         ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
         ['gemini-api-key', 'test-gemini-api-key'],
         ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
       ]);
       return inputs.get(name) ?? '';
     });
@@ -93,6 +96,7 @@ describe('Entry Point', () => {
         ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
         ['gemini-api-key', 'test-gemini-api-key'],
         ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
       ]);
       return inputs.get(name) ?? '';
     });

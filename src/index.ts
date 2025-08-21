@@ -31,6 +31,7 @@ export async function run(): Promise<void> {
     const geminiApiKey = core.getInput('gemini-api-key');
     const guidelinesFile =
       core.getInput('guidelines-file') || 'CONTRIBUTING.md';
+    const skipAuthors = core.getInput('skip-authors');
 
     core.info('Creating validator with GitHub and Gemini clients...');
 
@@ -39,6 +40,7 @@ export async function run(): Promise<void> {
       githubToken,
       geminiApiKey,
       guidelinesFile,
+      skipAuthors,
     };
 
     const githubClient = new GitHubClient(githubToken);

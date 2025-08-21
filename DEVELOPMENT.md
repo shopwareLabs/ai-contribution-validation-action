@@ -213,6 +213,38 @@ frustrate developers trying to debug issues.
 - Provide specific guidance for each error type
 - Preserve original error for debugging while adding user-friendly messages
 
+### Bot Exclusion Pattern
+
+**Decision**: Implement comma-separated author list for bot exclusion with early return validation
+skip.
+
+**Rationale**: Dependency management bots (dependabot, renovate) follow different contribution
+patterns than human developers. They create PRs with automated commit messages and minimal
+descriptions that don't conform to human contribution guidelines. Validating these PRs wastes AI API
+costs and creates false positives.
+
+**Implementation**:
+
+- **Early Return Design**: Check author before AI validation to save API costs
+- **Flexible Configuration**: Comma-separated list supports multiple bots without code changes
+- **Backwards Compatibility**: Optional `skipAuthors` field with empty default preserves existing
+  behavior
+- **Cost Optimization**: Skipped PRs return immediately without expensive AI API calls
+- **Clear Feedback**: Skipped status and descriptive message for transparency
+
+**Usage Pattern**:
+
+```yaml
+skip-authors: 'dependabot[bot],renovate[bot],github-actions[bot]'
+```
+
+**Architecture Benefits**:
+
+1. **Performance**: No AI validation overhead for automated PRs
+2. **Cost Control**: Prevents unnecessary API charges for bot PRs
+3. **Flexibility**: Supports any bot by GitHub username without code changes
+4. **Transparency**: Clear logging when validation is skipped
+
 ## Project Structure
 
 ```

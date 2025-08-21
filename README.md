@@ -23,6 +23,7 @@ actionable feedback to contributors.
 - **Configurable Guidelines**: Works with any contribution guidelines file (CONTRIBUTING.md, etc.)
 - **Rate Limit Handling**: Built-in exponential backoff for GitHub API rate limits
 - **Multiple AI Models**: Support for both Gemini 1.5 Flash and Pro models
+- **Bot Exclusion**: Skip validation for automated PRs (dependabot, renovate, etc.)
 - **Error Recovery**: Graceful handling of API failures and network issues
 
 ## Quick Start
@@ -61,6 +62,7 @@ jobs:
     max-pr-size: '3000'
     fail-on-errors: true
     comment-identifier: 'custom-validator'
+    skip-authors: 'dependabot[bot],renovate[bot]'
 ```
 
 ## Configuration
@@ -76,6 +78,7 @@ jobs:
 | `max-pr-size`        | Maximum PR size in lines of code                  | No       | `5000`             |
 | `fail-on-errors`     | Fail action on validation errors                  | No       | `false`            |
 | `comment-identifier` | Unique identifier for PR comments                 | No       | `ai-validator`     |
+| `skip-authors`       | Comma-separated list of PR authors to skip        | No       | `""`               |
 
 ### Outputs
 
@@ -148,7 +151,48 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          skip-authors: 'dependabot[bot]' # Skip bot PRs
 ```
+
+## Bot Exclusion
+
+Skip validation for automated PRs from dependency management bots and other automated tools that
+don't follow human contribution guidelines.
+
+### Basic Bot Exclusion
+
+```yaml
+- name: Validate contribution
+  uses: shopware/ai-contribution-validation-action@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+    skip-authors: 'dependabot[bot]'
+```
+
+### Multiple Bots
+
+```yaml
+- name: Validate contribution
+  uses: shopware/ai-contribution-validation-action@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+    skip-authors: 'dependabot[bot],renovate[bot],github-actions[bot]'
+```
+
+### Common Bot Authors
+
+- `dependabot[bot]` - GitHub Dependabot
+- `renovate[bot]` - Renovate Bot
+- `github-actions[bot]` - GitHub Actions Bot
+- `greenkeeper[bot]` - Greenkeeper (legacy)
+
+When a PR from a skipped author is detected, the action will:
+
+- Skip all AI validation checks
+- Return success status
+- Log a message indicating validation was skipped
 
 ## Example Output
 
@@ -188,7 +232,7 @@ _Validated by AI Contribution Validator v1.0_
 ### Open Source Projects
 
 ```yaml
-# Only validate external contributions
+# Only validate external contributions, skip bots
 jobs:
   validate:
     if: github.event.pull_request.head.repo.fork == true
@@ -199,6 +243,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
           fail-on-errors: false # Don't block external PRs
+          skip-authors: 'dependabot[bot],renovate[bot]'
 ```
 
 ### Enterprise Teams
@@ -225,6 +270,19 @@ jobs:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
     guidelines-file: 'docs/typescript-guidelines.md'
+```
+
+### Automated Dependency Management
+
+```yaml
+# Skip validation for dependency updates, validate everything else
+- name: Validate contributions
+  uses: shopware/ai-contribution-validation-action@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+    skip-authors: 'dependabot[bot],renovate[bot],snyk-bot'
+    fail-on-errors: true # Strict for human contributions
 ```
 
 ## Troubleshooting

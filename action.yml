@@ -33,6 +33,10 @@ inputs:
     description: "Unique identifier for PR comments"
     required: false
     default: "ai-validator"
+  skip-authors:
+    description: "Comma-separated list of PR authors to skip validation"
+    required: false
+    default: ""
 
 outputs:
   validation-status:

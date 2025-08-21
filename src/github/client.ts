@@ -54,6 +54,7 @@ export interface PRData {
   commits: CommitData[];
   files: FileData[];
   diffStats: DiffStats;
+  author?: string; // GitHub user login for bot exclusion feature
 }
 
 export class GitHubClient {
@@ -155,6 +156,7 @@ export class GitHubClient {
         commits,
         files,
         diffStats,
+        author: prResponse.data.user?.login, // Extract PR author for bot detection
       };
     } catch (error) {
       // Transform GitHub API errors into actionable user guidance rather than
