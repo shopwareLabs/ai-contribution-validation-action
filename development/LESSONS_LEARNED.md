@@ -184,3 +184,24 @@ deprecated in favor of `files:`, causing workflow warnings.
 - Documentation of library IDs in CLAUDE.md for consistent future references
 - Regular monitoring of GitHub Actions ecosystem updates and version pinning with semantic
   versioning
+
+## Configuration Management & Documentation Validation
+
+### Problem: Assumptions Without Verification
+
+**Issue:** Created Dependabot configuration with assumed assignee (`shopware-bot`) without verifying
+the username exists or has repository access permissions.
+
+**Solution:**
+
+- Always validate configuration parameters against official documentation
+- Use Context7 or WebSearch tools to verify external service configurations
+- Remove optional parameters when unsure rather than making assumptions
+- Test configurations in minimal form first, then add complexity
+
+**Prevention Strategy:**
+
+- Check all configuration parameters against authoritative sources
+- Use official documentation over assumptions or examples from other projects
+- Start with minimal required configuration, add optional features incrementally
+- Document configuration decisions and their sources for future reference

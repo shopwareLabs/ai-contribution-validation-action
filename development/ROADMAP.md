@@ -190,49 +190,33 @@ jobs:
 
 ## 📋 Current Status & Next Priorities
 
-### ✅ Recently Completed
-
-- ✅ **Bot Exclusion Feature** _(v0.1.1)_ - Skip automated PRs to save AI costs
-- ✅ **v0.1.0 Release** - MVP with GitHub/Gemini integration
-- ✅ **CI/CD Pipeline** - Self-validation and maintenance automation
-- ✅ **Test Coverage** - 98.92% coverage with comprehensive error handling
-
 ### 🎯 Immediate Priorities
 
-1. **Dependabot Configuration** - Automated dependency updates
-2. **v0.1.1 Release** - Tag bot exclusion feature
-3. **GitHub Marketplace Submission** - Submit to marketplace
-4. **v0.2.0 Planning** - Multi-AI provider support
-5. **Community Growth** - Documentation and examples
-6. **Performance Optimization** - Caching and batch processing
+1. **v0.1.0 Release** - Complete initial stable release
+2. **GitHub Marketplace Submission** - Submit to marketplace after v0.1.0
+3. **v0.2.0 Planning** - Multi-AI provider support
+4. **Community Growth** - Documentation and examples
+5. **Performance Optimization** - Caching and batch processing
 
 ## 🚀 Quick-Start Commands
 
 ```bash
 # Development
 npm run validate    # Run all checks
-npm run test:watch  # Watch mode
+npm run test:watch  # TDD mode
 
-# Release (v0.1.0 completed)
+# Local testing
+act pull_request -e test/fixtures/pr-event.json
+act --env-file .env.act
+
+# Release
+git tag -a v1.0.0 -m "Release description"
 git push origin main --tags
-
-# Next release
-git tag -a v0.2.0 -m "Multi-provider support"
-
-# Local testing with act
-act pull_request -e test/fixtures/pr-event.json  # Test PR validation
-act push                                          # Test CI workflow
-act -l                                           # List all available events
-act -n                                           # Dry run (show what would execute)
-act pull_request --container-architecture linux/amd64  # For Apple Silicon
-act -W .github/workflows/validate-pr.yml         # Test specific workflow
-act --env-file .env.act                          # Use mock environment variables
 ```
 
 ---
 
 ## 📚 References
 
-- **[LESSONS_LEARNED.md](LESSONS_LEARNED.md)** - Problems encountered, solutions, and prevention
-  strategies
+- **[LESSONS_LEARNED.md](LESSONS_LEARNED.md)** - Problems, solutions, and prevention strategies
 - **[DEVELOPMENT.md](../DEVELOPMENT.md)** - Technical architecture and development patterns
