@@ -637,7 +637,28 @@ async function run() {
         const validationResult = await validator.validate(owner, repo, prNumber);
         const formatter = new formatter_1.ResultFormatter();
         const formattedResult = formatter.formatToMarkdown(validationResult);
-        const commentResult = await githubClient.createComment(owner, repo, prNumber, formattedResult, commentIdentifier);
+        let commentResult;
+        try {
+            const existingComment = await githubClient.findCommentByIdentifier(owner, repo, prNumber, commentIdentifier);
+            if (existingComment) {
+                core.info(`Found existing comment with ID ${existingComment.id}, updating...`);
+                try {
+                    commentResult = await githubClient.updateComment(owner, repo, existingComment.id, formattedResult, commentIdentifier);
+                }
+                catch (updateError) {
+                    core.warning(`Failed to update comment: ${updateError}, creating new comment instead`);
+                    commentResult = await githubClient.createComment(owner, repo, prNumber, formattedResult, commentIdentifier);
+                }
+            }
+            else {
+                core.info('No existing comment found, creating new comment...');
+                commentResult = await githubClient.createComment(owner, repo, prNumber, formattedResult, commentIdentifier);
+            }
+        }
+        catch (error) {
+            core.warning(`Error checking for existing comment: ${error}, creating new comment`);
+            commentResult = await githubClient.createComment(owner, repo, prNumber, formattedResult, commentIdentifier);
+        }
         const commentUrl = `https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentResult.id}`;
         core.setOutput('comment-url', commentUrl);
         if (validationResult.status === 'PASS') {

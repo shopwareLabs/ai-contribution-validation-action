@@ -280,4 +280,330 @@ describe('Entry Point', () => {
       'https://github.com/test-owner/test-repo/pull/456#issuecomment-123456'
     );
   });
+
+  it('should update existing PR comment instead of creating duplicate', async () => {
+    // Mock core.getInput to return test values
+    vi.mocked(core.getInput).mockImplementation((name: string) => {
+      const inputs = new Map([
+        ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
+        ['gemini-api-key', 'test-gemini-api-key'],
+        ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
+        ['comment-identifier', 'ai-validator'],
+      ]);
+      return inputs.get(name) ?? '';
+    });
+
+    // Mock fs.readFileSync to return PR event data
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
+        pull_request: {
+          number: 789,
+        },
+      })
+    );
+
+    // Mock validation result
+    const mockValidationResult = {
+      status: 'FAIL',
+      issues: ['Missing tests'],
+      improved_title: '',
+      improved_commits: '',
+      improved_description: '',
+    };
+
+    // Mock validator.validate to return validation result
+    const mockValidate = vi.fn().mockResolvedValue(mockValidationResult);
+    vi.mocked(Validator).mockImplementation(
+      () =>
+        ({
+          validate: mockValidate,
+        }) as any
+    );
+
+    // Mock ResultFormatter
+    const mockFormatToMarkdown = vi
+      .fn()
+      .mockReturnValue('## Validation Results\n❌ Missing tests');
+    vi.mocked(ResultFormatter).mockImplementation(
+      () =>
+        ({
+          formatToMarkdown: mockFormatToMarkdown,
+        }) as any
+    );
+
+    // Mock GitHubClient with existing comment found
+    const mockFindCommentByIdentifier = vi.fn().mockResolvedValue({
+      id: 999888,
+      body: 'Old validation comment',
+    });
+    const mockUpdateComment = vi.fn().mockResolvedValue({
+      id: 999888,
+      body: 'Updated comment',
+    });
+    const mockCreateComment = vi.fn().mockResolvedValue({
+      id: 777666,
+      body: 'New comment',
+    });
+
+    vi.mocked(GitHubClient).mockImplementation(
+      () =>
+        ({
+          findCommentByIdentifier: mockFindCommentByIdentifier,
+          updateComment: mockUpdateComment,
+          createComment: mockCreateComment,
+        }) as any
+    );
+
+    // Set GitHub context
+    process.env['GITHUB_REPOSITORY'] = 'test-owner/test-repo';
+    process.env['GITHUB_EVENT_PATH'] = 'test/fixtures/pr-event.json';
+
+    // Import and test the run function
+    const { run } = await import('../../src/index');
+    await run();
+
+    // Verify findCommentByIdentifier was called first
+    expect(mockFindCommentByIdentifier).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      789,
+      'ai-validator'
+    );
+
+    // Verify updateComment was called instead of createComment
+    expect(mockUpdateComment).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      999888,
+      '## Validation Results\n❌ Missing tests',
+      'ai-validator'
+    );
+
+    // Verify createComment was NOT called
+    expect(mockCreateComment).not.toHaveBeenCalled();
+
+    // Verify comment-url output was set with updated comment ID
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'comment-url',
+      'https://github.com/test-owner/test-repo/pull/789#issuecomment-999888'
+    );
+  });
+
+  it('should create new comment when no existing comment found', async () => {
+    // Mock core.getInput to return test values
+    vi.mocked(core.getInput).mockImplementation((name: string) => {
+      const inputs = new Map([
+        ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
+        ['gemini-api-key', 'test-gemini-api-key'],
+        ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
+        ['comment-identifier', 'ai-validator'],
+      ]);
+      return inputs.get(name) ?? '';
+    });
+
+    // Mock fs.readFileSync to return PR event data
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
+        pull_request: {
+          number: 321,
+        },
+      })
+    );
+
+    // Mock validation result
+    const mockValidationResult = {
+      status: 'PASS',
+      issues: [],
+      improved_title: '',
+      improved_commits: '',
+      improved_description: '',
+    };
+
+    // Mock validator.validate to return validation result
+    const mockValidate = vi.fn().mockResolvedValue(mockValidationResult);
+    vi.mocked(Validator).mockImplementation(
+      () =>
+        ({
+          validate: mockValidate,
+        }) as any
+    );
+
+    // Mock ResultFormatter
+    const mockFormatToMarkdown = vi
+      .fn()
+      .mockReturnValue('## Validation Results\n✅ All checks passed');
+    vi.mocked(ResultFormatter).mockImplementation(
+      () =>
+        ({
+          formatToMarkdown: mockFormatToMarkdown,
+        }) as any
+    );
+
+    // Mock GitHubClient with NO existing comment found
+    const mockFindCommentByIdentifier = vi.fn().mockResolvedValue(null);
+    const mockUpdateComment = vi.fn();
+    const mockCreateComment = vi.fn().mockResolvedValue({
+      id: 555444,
+      body: 'New comment',
+    });
+
+    vi.mocked(GitHubClient).mockImplementation(
+      () =>
+        ({
+          findCommentByIdentifier: mockFindCommentByIdentifier,
+          updateComment: mockUpdateComment,
+          createComment: mockCreateComment,
+        }) as any
+    );
+
+    // Set GitHub context
+    process.env['GITHUB_REPOSITORY'] = 'test-owner/test-repo';
+    process.env['GITHUB_EVENT_PATH'] = 'test/fixtures/pr-event.json';
+
+    // Import and test the run function
+    const { run } = await import('../../src/index');
+    await run();
+
+    // Verify findCommentByIdentifier was called first
+    expect(mockFindCommentByIdentifier).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      321,
+      'ai-validator'
+    );
+
+    // Verify createComment was called since no existing comment
+    expect(mockCreateComment).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      321,
+      '## Validation Results\n✅ All checks passed',
+      'ai-validator'
+    );
+
+    // Verify updateComment was NOT called
+    expect(mockUpdateComment).not.toHaveBeenCalled();
+
+    // Verify comment-url output was set with new comment ID
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'comment-url',
+      'https://github.com/test-owner/test-repo/pull/321#issuecomment-555444'
+    );
+  });
+
+  it('should fallback to create comment if update fails', async () => {
+    // Mock core.getInput to return test values
+    vi.mocked(core.getInput).mockImplementation((name: string) => {
+      const inputs = new Map([
+        ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
+        ['gemini-api-key', 'test-gemini-api-key'],
+        ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
+        ['comment-identifier', 'ai-validator'],
+      ]);
+      return inputs.get(name) ?? '';
+    });
+
+    // Mock fs.readFileSync to return PR event data
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
+        pull_request: {
+          number: 654,
+        },
+      })
+    );
+
+    // Mock validation result
+    const mockValidationResult = {
+      status: 'PASS',
+      issues: [],
+      improved_title: '',
+      improved_commits: '',
+      improved_description: '',
+    };
+
+    // Mock validator.validate to return validation result
+    const mockValidate = vi.fn().mockResolvedValue(mockValidationResult);
+    vi.mocked(Validator).mockImplementation(
+      () =>
+        ({
+          validate: mockValidate,
+        }) as any
+    );
+
+    // Mock ResultFormatter
+    const mockFormatToMarkdown = vi
+      .fn()
+      .mockReturnValue('## Validation Results\n✅ All checks passed');
+    vi.mocked(ResultFormatter).mockImplementation(
+      () =>
+        ({
+          formatToMarkdown: mockFormatToMarkdown,
+        }) as any
+    );
+
+    // Mock GitHubClient with existing comment but update fails
+    const mockFindCommentByIdentifier = vi.fn().mockResolvedValue({
+      id: 111222,
+      body: 'Old comment',
+    });
+    const mockUpdateComment = vi
+      .fn()
+      .mockRejectedValue(new Error('Comment was deleted'));
+    const mockCreateComment = vi.fn().mockResolvedValue({
+      id: 333444,
+      body: 'New comment after failed update',
+    });
+
+    vi.mocked(GitHubClient).mockImplementation(
+      () =>
+        ({
+          findCommentByIdentifier: mockFindCommentByIdentifier,
+          updateComment: mockUpdateComment,
+          createComment: mockCreateComment,
+        }) as any
+    );
+
+    // Set GitHub context
+    process.env['GITHUB_REPOSITORY'] = 'test-owner/test-repo';
+    process.env['GITHUB_EVENT_PATH'] = 'test/fixtures/pr-event.json';
+
+    // Import and test the run function
+    const { run } = await import('../../src/index');
+    await run();
+
+    // Verify findCommentByIdentifier was called first
+    expect(mockFindCommentByIdentifier).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      654,
+      'ai-validator'
+    );
+
+    // Verify updateComment was attempted
+    expect(mockUpdateComment).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      111222,
+      '## Validation Results\n✅ All checks passed',
+      'ai-validator'
+    );
+
+    // Verify createComment was called as fallback after update failed
+    expect(mockCreateComment).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      654,
+      '## Validation Results\n✅ All checks passed',
+      'ai-validator'
+    );
+
+    // Verify comment-url output was set with new comment ID from fallback
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'comment-url',
+      'https://github.com/test-owner/test-repo/pull/654#issuecomment-333444'
+    );
+  });
 });

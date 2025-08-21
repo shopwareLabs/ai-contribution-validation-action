@@ -168,6 +168,15 @@ optimization, cost control, flexible configuration, clear feedback.
 skip-authors: 'dependabot[bot],renovate[bot],github-actions[bot]'
 ```
 
+### Idempotent Comment Management
+
+**Decision**: Check for existing comments before creating new ones, update if found. **Rationale**:
+Prevents duplicate comments on force-push and re-run scenarios, maintaining clean PR interface.
+**Implementation**: Nested try-catch pattern with graceful fallback ensures reliability even when
+comments are deleted between operations. **Benefits**: Single comment thread per validator,
+preserved comment history, support for multiple validators via unique identifiers, resilient error
+handling.
+
 ### GitHub Token Flexibility
 
 **Decision**: Remove strict token format validation to support automatic GITHUB_TOKEN.
