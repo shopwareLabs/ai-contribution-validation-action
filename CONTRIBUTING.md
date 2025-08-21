@@ -59,6 +59,14 @@ Keep lines under 70 characters.
 - `formatter` - Result formatting
 - `config` - Configuration changes
 
+### What to Avoid in Commits
+
+Never include:
+
+- Session or version references
+- Coverage statistics or metrics
+- Temporary development details
+
 ### Example Good Commit
 
 ```
@@ -74,10 +82,13 @@ Addresses issue #15 where validations would hang indefinitely.
 ### Example Bad Commits
 
 ```
-❌ Fixed stuff
-❌ Update code
-❌ feat: add new feature and fix bug and update docs
-❌ WIP: working on validator
+Fixed stuff
+Update code
+feat: add new feature and fix bug and update docs
+WIP: working on validator
+Session 18: apply fixes
+fix: update with 98% coverage
+Applied stash from previous work
 ```
 
 ## Testing Requirements
