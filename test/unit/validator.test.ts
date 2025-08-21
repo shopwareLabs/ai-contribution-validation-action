@@ -132,8 +132,11 @@ describe('Validator', () => {
         },
       });
       vi.mocked(mockGeminiClient.validateContent).mockResolvedValue({
-        valid: true,
-        suggestions: [],
+        status: 'PASS',
+        issues: [],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       });
 
       const validator = new Validator(
@@ -145,8 +148,13 @@ describe('Validator', () => {
       const result = await validator.validate('owner', 'repo', 123);
 
       expect(result).toBeDefined();
-      expect(typeof result.valid).toBe('boolean');
-      expect(Array.isArray(result.suggestions)).toBe(true);
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('issues');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
+      expect(['PASS', 'FAIL', 'WARNINGS']).toContain(result.status);
+      expect(Array.isArray(result.issues)).toBe(true);
     });
 
     it('should orchestrate full validation workflow with GitHub and Gemini clients', async () => {
@@ -166,8 +174,11 @@ describe('Validator', () => {
       };
 
       const mockValidationResult = {
-        valid: false,
-        suggestions: ['Add unit tests', 'Update documentation'],
+        status: 'FAIL' as const,
+        issues: ['Add unit tests', 'Update documentation'],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       };
 
       // Configure mocks
@@ -248,7 +259,13 @@ describe('Validator', () => {
         author: 'testuser',
       };
 
-      const mockValidationResult = { valid: true, suggestions: [] };
+      const mockValidationResult = {
+        status: 'PASS' as const,
+        issues: [],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
+      };
 
       vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
       vi.mocked(mockGeminiClient.generateValidationPrompt).mockReturnValue(
@@ -291,6 +308,104 @@ describe('Validator', () => {
     });
   });
 
+  describe('validation report structure', () => {
+    it('should return complete validation report with all required fields', async () => {
+      const config = {
+        githubToken: 'ghp_1234567890abcdef1234567890abcdef12345678',
+        geminiApiKey: 'test-api-key',
+        guidelinesFile: 'CONTRIBUTING.md',
+      };
+
+      const mockPRData = {
+        number: 123,
+        title: 'test PR',
+        body: 'test body',
+        commits: [],
+        files: [],
+        diffStats: {
+          totalAdditions: 10,
+          totalDeletions: 5,
+          totalChanges: 15,
+          filesChanged: 2,
+        },
+      };
+
+      vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
+      vi.mocked(mockGeminiClient.generateValidationPrompt).mockReturnValue(
+        'test prompt'
+      );
+      vi.mocked(mockGeminiClient.validateContent).mockResolvedValue({
+        status: 'PASS',
+        issues: [],
+        improved_title: 'better title',
+        improved_commits: 'better commits',
+        improved_description: 'better description',
+      });
+
+      const validator = new Validator(
+        config,
+        mockGitHubClient,
+        mockGeminiClient
+      );
+
+      const result = await validator.validate('owner', 'repo', 123);
+
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('issues');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
+      expect(result.improved_title).toBe('better title');
+      expect(result.improved_commits).toBe('better commits');
+      expect(result.improved_description).toBe('better description');
+    });
+  });
+
+  describe('fallback validation report', () => {
+    it('should return complete validation report even without Gemini client', async () => {
+      const config = {
+        githubToken: 'ghp_1234567890abcdef1234567890abcdef12345678',
+        geminiApiKey: 'test-api-key',
+        guidelinesFile: 'CONTRIBUTING.md',
+      };
+
+      const mockPRData = {
+        number: 123,
+        title: 'test PR',
+        body: 'test body',
+        commits: [],
+        files: [],
+        diffStats: {
+          totalAdditions: 10,
+          totalDeletions: 5,
+          totalChanges: 15,
+          filesChanged: 2,
+        },
+      };
+
+      vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
+
+      // Create validator without Gemini client to test fallback
+      const validator = new Validator(
+        config,
+        mockGitHubClient,
+        undefined // No Gemini client - will use fallback
+      );
+
+      const result = await validator.validate('owner', 'repo', 123);
+
+      // Should have all required fields even in fallback mode
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('issues');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
+      expect(result.improved_title).toBe('');
+      expect(result.improved_commits).toBe('');
+      expect(result.improved_description).toBe('');
+    });
+  });
+
   describe('bot exclusion', () => {
     it('should skip validation for dependabot PRs when configured', async () => {
       const config = {
@@ -325,9 +440,9 @@ describe('Validator', () => {
 
       const result = await validator.validate('owner', 'repo', 123);
 
-      expect(result.valid).toBe(true);
+      expect(result.status).toBe('PASS');
       expect(result.skipped).toBe(true);
-      expect(result.suggestions).toContain(
+      expect(result.issues).toContain(
         'Validation skipped for automated PR by dependabot[bot]'
       );
 
@@ -360,8 +475,11 @@ describe('Validator', () => {
       };
 
       const mockValidationResult = {
-        valid: false,
-        suggestions: ['Add unit tests', 'Update documentation'],
+        status: 'FAIL' as const,
+        issues: ['Add unit tests', 'Update documentation'],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       };
 
       vi.mocked(mockGitHubClient.extractPRData).mockResolvedValue(mockPRData);
@@ -425,7 +543,14 @@ describe('Validator', () => {
           () =>
             new Promise(resolve =>
               global.setTimeout(
-                () => resolve({ valid: true, suggestions: [] }),
+                () =>
+                  resolve({
+                    status: 'PASS' as const,
+                    issues: [],
+                    improved_title: '',
+                    improved_commits: '',
+                    improved_description: '',
+                  }),
                 31000
               )
             ) // 31 second delay - exceeds 30s timeout
@@ -468,8 +593,11 @@ describe('Validator', () => {
         'Generated prompt'
       );
       vi.mocked(mockGeminiClient.validateContent).mockResolvedValue({
-        valid: true,
-        suggestions: ['Looks good!'],
+        status: 'PASS' as const,
+        issues: ['Looks good!'],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       });
       vi.mocked(mockGitHubClient.createCommitStatus).mockResolvedValue({
         id: 1,
@@ -494,8 +622,11 @@ describe('Validator', () => {
 
       const result = await validator.validate('owner', 'repo', 123);
       expect(result).toEqual({
-        valid: true,
-        suggestions: ['Looks good!'],
+        status: 'PASS',
+        issues: ['Looks good!'],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       });
     });
 
@@ -540,8 +671,11 @@ describe('Validator', () => {
 
       // Should return fallback response
       expect(result).toEqual({
-        valid: true,
-        suggestions: [],
+        status: 'PASS',
+        issues: [],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       });
 
       // createCommitStatus should not be called since debug code was removed
@@ -564,8 +698,11 @@ describe('Validator', () => {
 
       // Should return minimal fallback response
       expect(result).toEqual({
-        valid: true,
-        suggestions: [],
+        status: 'PASS',
+        issues: [],
+        improved_title: '',
+        improved_commits: '',
+        improved_description: '',
       });
     });
   });

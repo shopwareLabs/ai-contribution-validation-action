@@ -10,7 +10,7 @@ vi.mock('@google/generative-ai', () => ({
           Promise.resolve({
             response: {
               text: () =>
-                '{"valid": true, "suggestions": ["Consider adding more detailed test coverage"]}',
+                '{"status": "PASS", "issues": [], "improved_title": "", "improved_commits": "", "improved_description": ""}',
               usageMetadata: {
                 promptTokenCount: 200,
                 candidatesTokenCount: 25,
@@ -124,8 +124,11 @@ describe('GeminiClient', () => {
       const response = await client.validateContent(prompt);
 
       expect(response).toBeDefined();
-      expect(response.valid).toBe(true); // Mock now working correctly
-      expect(response.suggestions).toBeInstanceOf(Array);
+      expect(response.status).toBe('PASS');
+      expect(response.issues).toBeInstanceOf(Array);
+      expect(response.improved_title).toBeDefined();
+      expect(response.improved_commits).toBeDefined();
+      expect(response.improved_description).toBeDefined();
     });
 
     it('should handle API errors gracefully', async () => {
@@ -134,10 +137,8 @@ describe('GeminiClient', () => {
       // Test that the method returns successful response from mock
       const result = await client.validateContent('test');
       expect(result).toBeDefined();
-      expect(result.valid).toBe(true);
-      expect(result.suggestions).toContain(
-        'Consider adding more detailed test coverage'
-      );
+      expect(result.status).toBe('PASS');
+      expect(result.issues).toBeInstanceOf(Array);
     });
 
     it('should make real Gemini API call with GoogleGenerativeAI model', async () => {
@@ -184,14 +185,16 @@ describe('GeminiClient', () => {
 
       // Expect structured response with validation analysis
       expect(result).toBeDefined();
-      expect(result).toHaveProperty('valid');
-      expect(result).toHaveProperty('suggestions');
-      expect(typeof result.valid).toBe('boolean');
-      expect(Array.isArray(result.suggestions)).toBe(true);
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('issues');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
+      expect(['PASS', 'FAIL', 'WARNINGS']).toContain(result.status);
+      expect(Array.isArray(result.issues)).toBe(true);
 
       // Should have analyzed the PR content meaningfully
-      expect(result.valid).toBe(true); // Mock now working correctly
-      expect(result.suggestions.length).toBeLessThanOrEqual(3); // Should provide helpful suggestions
+      expect(result.status).toBe('PASS'); // Mock now working correctly
     });
 
     it('should handle API errors gracefully with fallback response', async () => {
@@ -203,16 +206,16 @@ describe('GeminiClient', () => {
 
       // Should return fallback response structure
       expect(result).toBeDefined();
-      expect(result).toHaveProperty('valid');
-      expect(result).toHaveProperty('suggestions');
-      expect(typeof result.valid).toBe('boolean');
-      expect(Array.isArray(result.suggestions)).toBe(true);
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('issues');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
+      expect(['PASS', 'FAIL', 'WARNINGS']).toContain(result.status);
+      expect(Array.isArray(result.issues)).toBe(true);
 
       // Mock intercepts all calls, so even invalid keys get successful response
-      expect(result.valid).toBe(true);
-      expect(result.suggestions).toContain(
-        'Consider adding more detailed test coverage'
-      );
+      expect(result.status).toBe('PASS');
     });
 
     it('should include token usage tracking in response', async () => {
@@ -220,10 +223,6 @@ describe('GeminiClient', () => {
       const prompt = 'Test prompt for token tracking';
 
       const result = await client.validateContent(prompt);
-
-      // First check what we actually get for valid property
-      console.log('🟢 WORKING TEST - result.valid:', result.valid);
-      console.log('🟢 WORKING TEST - result.suggestions:', result.suggestions);
 
       // Should include usage metadata
       expect(result).toHaveProperty('tokenUsage');
@@ -268,11 +267,8 @@ Please validate this pull request and provide specific, actionable feedback.`;
       const result = await client.validateContent(detailedPrompt);
 
       // Should analyze the PR content meaningfully using real API mock
-      expect(result.valid).toBe(true); // Mock now working correctly
-      expect(result.suggestions.length).toBeLessThanOrEqual(3);
-      expect(result.suggestions).toContain(
-        'Consider adding more detailed test coverage'
-      ); // From mock
+      expect(result.status).toBe('PASS'); // Mock now working correctly
+      expect(result.issues.length).toBeLessThanOrEqual(3);
 
       // Should have realistic token usage from mocked Gemini API
       expect(result.tokenUsage).toBeDefined();
@@ -280,9 +276,9 @@ Please validate this pull request and provide specific, actionable feedback.`;
       expect(result.tokenUsage!.completionTokens).toBe(25); // From mock
       expect(result.tokenUsage!.totalTokens).toBe(225); // From mock
 
-      // If there are suggestions, they should be meaningful (not just generic)
-      if (result.suggestions.length > 0) {
-        expect(result.suggestions.some(s => s.length > 10)).toBe(true); // Non-trivial suggestions
+      // If there are issues, they should be meaningful (not just generic)
+      if (result.issues.length > 0) {
+        expect(result.issues.some(s => s.length > 10)).toBe(true); // Non-trivial issues
       }
     });
 
@@ -294,8 +290,11 @@ Please validate this pull request and provide specific, actionable feedback.`;
 
       const result = await client.validateContent(prompt);
 
-      expect(result.valid).toBe(false);
-      expect(result.suggestions).toEqual(['Fix commit message format']);
+      expect(result.status).toBe('FAIL');
+      expect(result.issues).toEqual(['Fix commit message format']);
+      expect(result.improved_title).toBe('');
+      expect(result.improved_commits).toBe('');
+      expect(result.improved_description).toBe('');
       expect(result.tokenUsage).toEqual({
         promptTokens: prompt.length / 4,
         completionTokens: 5,
@@ -330,10 +329,13 @@ Please validate this pull request and provide specific, actionable feedback.`;
 
       const result = await client.validateContent('test prompt');
 
-      expect(result.valid).toBe(false);
-      expect(result.suggestions).toEqual([
+      expect(result.status).toBe('FAIL');
+      expect(result.issues).toEqual([
         'AI validation unavailable - please review manually',
       ]);
+      expect(result.improved_title).toBe('');
+      expect(result.improved_commits).toBe('');
+      expect(result.improved_description).toBe('');
       expect(result.tokenUsage).toEqual({
         promptTokens: 0,
         completionTokens: 0,

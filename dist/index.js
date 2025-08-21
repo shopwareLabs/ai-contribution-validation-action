@@ -47,8 +47,11 @@ Please validate this pull request and provide specific, actionable feedback.`;
         try {
             if (prompt.includes('Invalid commit message format')) {
                 return {
-                    valid: false,
-                    suggestions: ['Fix commit message format'],
+                    status: 'FAIL',
+                    issues: ['Fix commit message format'],
+                    improved_title: '',
+                    improved_commits: '',
+                    improved_description: '',
                     tokenUsage: {
                         promptTokens: prompt.length / 4,
                         completionTokens: 5,
@@ -63,33 +66,62 @@ Please validate this pull request and provide specific, actionable feedback.`;
                     responseSchema: {
                         type: generative_ai_1.SchemaType.OBJECT,
                         properties: {
-                            valid: {
-                                type: generative_ai_1.SchemaType.BOOLEAN,
-                                description: 'Whether the PR follows all guidelines',
+                            status: {
+                                type: generative_ai_1.SchemaType.STRING,
+                                description: 'Validation status: PASS, FAIL, or WARNINGS',
                             },
-                            suggestions: {
+                            issues: {
                                 type: generative_ai_1.SchemaType.ARRAY,
                                 items: { type: generative_ai_1.SchemaType.STRING },
-                                description: 'Specific, actionable improvement recommendations',
+                                description: 'Specific issues found with the PR',
+                            },
+                            improved_title: {
+                                type: generative_ai_1.SchemaType.STRING,
+                                description: 'Suggested improved PR title if needed',
+                            },
+                            improved_commits: {
+                                type: generative_ai_1.SchemaType.STRING,
+                                description: 'Suggested improved commit message if needed',
+                            },
+                            improved_description: {
+                                type: generative_ai_1.SchemaType.STRING,
+                                description: 'Suggested improved PR description if needed',
                             },
                         },
-                        required: ['valid', 'suggestions'],
+                        required: [
+                            'status',
+                            'issues',
+                            'improved_title',
+                            'improved_commits',
+                            'improved_description',
+                        ],
                     },
                 },
             });
             const structuredPrompt = `${prompt}
 
-Return a JSON response analyzing this pull request:
-- "valid": true if the PR follows all guidelines, false if there are issues
-- "suggestions": array of specific, actionable improvements (maximum 3)
+Return a JSON response with this exact structure analyzing this pull request:
+{
+  "status": "PASS" | "FAIL" | "WARNINGS",
+  "issues": ["list of specific issues found"],
+  "improved_title": "suggested improved PR title (empty string if title is fine)",
+  "improved_commits": "suggested improved commit message (empty string if commits are fine)",
+  "improved_description": "suggested improved PR description (empty string if description is fine)"
+}
 
-Focus on:
-1. Commit message format and clarity
-2. PR description completeness
-3. Code organization and file changes
-4. Adherence to the stated guidelines
+Validation criteria:
+1. Commit message format and clarity (conventional commits preferred)
+2. PR title descriptiveness and format
+3. PR description completeness and structure
+4. Code organization and file changes appropriateness
+5. Adherence to the stated guidelines
 
-Be concise and constructive.`;
+Status guidelines:
+- PASS: No issues, follows all guidelines
+- WARNINGS: Minor issues or suggestions for improvement
+- FAIL: Significant issues that need to be addressed
+
+Be specific and constructive in feedback.`;
             const result = await model.generateContent(structuredPrompt);
             const { response } = result;
             const { usageMetadata } = response;
@@ -101,15 +133,21 @@ Be concise and constructive.`;
             const jsonText = response.text();
             const validationResult = JSON.parse(jsonText);
             return {
-                valid: validationResult.valid,
-                suggestions: validationResult.suggestions ?? [],
+                status: validationResult.status ?? 'FAIL',
+                issues: validationResult.issues ?? [],
+                improved_title: validationResult.improved_title ?? '',
+                improved_commits: validationResult.improved_commits ?? '',
+                improved_description: validationResult.improved_description ?? '',
                 tokenUsage,
             };
         }
         catch (_error) {
             return {
-                valid: false,
-                suggestions: ['AI validation unavailable - please review manually'],
+                status: 'FAIL',
+                issues: ['AI validation unavailable - please review manually'],
+                improved_title: '',
+                improved_commits: '',
+                improved_description: '',
                 tokenUsage: {
                     promptTokens: 0,
                     completionTokens: 0,
@@ -134,68 +172,61 @@ exports.ResultFormatter = void 0;
 class ResultFormatter {
     formatToMarkdown(validationResult) {
         let markdown = '## 🤖 AI Validation Results\n\n';
-        if (validationResult.valid) {
-            markdown += '✅ **Validation Passed**\n';
+        if (validationResult.status === 'PASS') {
+            markdown += '### Status: ✅ Passed\n';
+            markdown += 'Great work! Your contribution meets our guidelines.\n\n';
+        }
+        else if (validationResult.status === 'WARNINGS') {
+            markdown += '### Status: ⚠️ Passed with Warnings\n';
+            markdown +=
+                'Your contribution looks good, but consider these suggestions for improvement.\n\n';
         }
         else {
-            markdown += '❌ **Validation Failed**\n\n';
-            if (validationResult.suggestions.length > 0) {
-                const errors = validationResult.suggestions.filter(s => s.startsWith('ERROR:'));
-                if (errors.length > 0) {
-                    markdown += '### 🚨 Errors\n\n';
-                    errors.forEach(error => {
-                        const cleanedError = error.replace('ERROR: ', '');
-                        const truncatedError = cleanedError.length > 1000
-                            ? `${cleanedError.substring(0, 1000)}...`
-                            : cleanedError;
-                        markdown += `- ${truncatedError}\n`;
-                    });
-                }
-                const warnings = validationResult.suggestions.filter(s => s.startsWith('WARNING:'));
-                if (warnings.length > 0) {
-                    markdown += '### ⚠️ Warnings\n\n';
-                    warnings.forEach(warning => {
-                        const cleanedWarning = warning.replace('WARNING: ', '');
-                        const truncatedWarning = cleanedWarning.length > 1000
-                            ? `${cleanedWarning.substring(0, 1000)}...`
-                            : cleanedWarning;
-                        markdown += `- ${truncatedWarning}\n`;
-                    });
-                }
-                const suggestions = validationResult.suggestions.filter(s => s.startsWith('SUGGESTION:'));
-                if (suggestions.length > 0) {
-                    markdown += '### 💡 Suggestions\n\n';
-                    suggestions.forEach(suggestion => {
-                        const cleanedSuggestion = suggestion.replace('SUGGESTION: ', '');
-                        const truncatedSuggestion = cleanedSuggestion.length > 1000
-                            ? `${cleanedSuggestion.substring(0, 1000)}...`
-                            : cleanedSuggestion;
-                        markdown += `- ${truncatedSuggestion}\n`;
-                    });
-                }
-                const uncategorized = validationResult.suggestions.filter(s => !s.startsWith('ERROR:') &&
-                    !s.startsWith('WARNING:') &&
-                    !s.startsWith('SUGGESTION:'));
-                if (uncategorized.length > 0) {
-                    markdown += '### Suggestions\n\n';
-                    uncategorized.forEach(suggestion => {
-                        markdown += `- ${suggestion}\n`;
-                    });
-                }
-            }
-            markdown += '\n## 📝 Next Steps\n\n';
-            let stepNumber = 1;
-            validationResult.suggestions.forEach(suggestion => {
-                if (suggestion.startsWith('ERROR: Missing unit tests')) {
-                    markdown += `${stepNumber}. Add unit tests for your changes\n`;
-                    stepNumber++;
-                }
-                else if (suggestion.startsWith('WARNING: Large PR size')) {
-                    markdown += `${stepNumber}. Break down large PR into smaller, focused changes\n`;
-                    stepNumber++;
-                }
-            });
+            markdown += '### Status: ❌ Needs Improvement\n';
+            markdown +=
+                'Your contribution needs some changes to meet our guidelines.\n\n';
         }
+        markdown += '### 📋 Issues Found:\n';
+        if (validationResult.issues.length === 0) {
+            markdown += '_No issues detected_\n\n';
+        }
+        else {
+            markdown += '\n';
+            validationResult.issues.forEach(issue => {
+                const truncatedIssue = issue.length > 1000 ? `${issue.substring(0, 1000)}...` : issue;
+                markdown += `- ${truncatedIssue}\n`;
+            });
+            markdown += '\n';
+        }
+        const hasImprovements = validationResult.improved_title.trim() !== '' ||
+            validationResult.improved_commits.trim() !== '' ||
+            validationResult.improved_description.trim() !== '';
+        if (hasImprovements) {
+            markdown += '### ✨ Specific Improvements:\n\n';
+            if (validationResult.improved_title.trim() !== '') {
+                markdown += '#### 📝 Suggested PR Title:\n';
+                markdown += '```\n';
+                markdown += `${validationResult.improved_title}\n`;
+                markdown += '```\n\n';
+            }
+            if (validationResult.improved_commits.trim() !== '') {
+                markdown += '#### 📋 Suggested Commit Message:\n';
+                markdown += '```\n';
+                markdown += `${validationResult.improved_commits}\n`;
+                markdown += '```\n\n';
+            }
+            if (validationResult.improved_description.trim() !== '') {
+                markdown += '#### 📄 Suggested PR Description:\n';
+                markdown += '```\n';
+                markdown += `${validationResult.improved_description}\n`;
+                markdown += '```\n\n';
+            }
+        }
+        const timestamp = `${new Date().toISOString().replace('T', ' ').split('.')[0]} UTC`;
+        markdown += '---\n';
+        markdown +=
+            '*Automated validation based on [contribution guidelines](CONTRIBUTING.md)*\n';
+        markdown += `_Last updated: ${timestamp}_\n`;
         return markdown;
     }
 }
@@ -241,27 +272,33 @@ class Validator {
                     .map(a => a.trim());
                 if (skipAuthors.includes(prData.author)) {
                     return {
-                        valid: true,
-                        suggestions: [
-                            `Validation skipped for automated PR by ${prData.author}`,
-                        ],
+                        status: 'PASS',
+                        issues: [`Validation skipped for automated PR by ${prData.author}`],
+                        improved_title: '',
+                        improved_commits: '',
+                        improved_description: '',
                         skipped: true,
                     };
                 }
             }
             if (this._geminiClient) {
                 const prompt = this._geminiClient.generateValidationPrompt(prData, this._config.guidelinesFile);
-                const validationResult = await this._geminiClient.validateContent(prompt);
-                return validationResult;
+                return await this._geminiClient.validateContent(prompt);
             }
             return Promise.resolve({
-                valid: true,
-                suggestions: [],
+                status: 'PASS',
+                issues: [],
+                improved_title: '',
+                improved_commits: '',
+                improved_description: '',
             });
         }
         return Promise.resolve({
-            valid: true,
-            suggestions: [],
+            status: 'PASS',
+            issues: [],
+            improved_title: '',
+            improved_commits: '',
+            improved_description: '',
         });
     }
 }
@@ -603,11 +640,11 @@ async function run() {
         const commentResult = await githubClient.createComment(owner, repo, prNumber, formattedResult, commentIdentifier);
         const commentUrl = `https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentResult.id}`;
         core.setOutput('comment-url', commentUrl);
-        if (validationResult.valid) {
+        if (validationResult.status === 'PASS') {
             core.info('Validation completed successfully - PR meets guidelines');
         }
         else {
-            core.warning(`Validation found issues: ${validationResult.suggestions.join(', ')}`);
+            core.warning(`Validation found issues: ${validationResult.issues.join(', ')}`);
         }
     }
     catch (error) {
