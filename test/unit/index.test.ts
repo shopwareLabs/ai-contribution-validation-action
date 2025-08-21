@@ -9,6 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as core from '@actions/core';
 import * as fs from 'fs';
 import { Validator } from '../../src/core/validator';
+import { ResultFormatter } from '../../src/core/formatter';
+import { GitHubClient } from '../../src/github/client';
 
 // Mock external dependencies
 vi.mock('@actions/core');
@@ -19,6 +21,7 @@ vi.mock('fs');
 vi.mock('../../src/github/client');
 vi.mock('../../src/ai/gemini-client');
 vi.mock('../../src/core/validator');
+vi.mock('../../src/core/formatter');
 
 describe('Entry Point', () => {
   beforeEach(() => {
@@ -152,6 +155,100 @@ describe('Entry Point', () => {
     expect(allCalls.some(call => call.includes('Validating PR #'))).toBe(true);
     expect(allCalls.some(call => call.includes('test-owner/test-repo'))).toBe(
       true
+    );
+  });
+
+  it('should create PR comment with formatted validation result', async () => {
+    // Mock core.getInput to return test values
+    vi.mocked(core.getInput).mockImplementation((name: string) => {
+      const inputs = new Map([
+        ['github-token', 'ghp_test_token_1234567890abcdef1234567890'],
+        ['gemini-api-key', 'test-gemini-api-key'],
+        ['guidelines-file', 'CONTRIBUTING.md'],
+        ['skip-authors', 'dependabot[bot]'],
+        ['comment-identifier', 'ai-validator'],
+      ]);
+      return inputs.get(name) ?? '';
+    });
+
+    // Mock fs.readFileSync to return PR event data
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({
+        pull_request: {
+          number: 456,
+        },
+      })
+    );
+
+    // Mock validation result with suggestions
+    const mockValidationResult = {
+      valid: false,
+      suggestions: [
+        'Commit message format needs improvement',
+        'Add unit tests',
+      ],
+    };
+
+    // Mock validator.validate to return validation result
+    const mockValidate = vi.fn().mockResolvedValue(mockValidationResult);
+    vi.mocked(Validator).mockImplementation(
+      () =>
+        ({
+          validate: mockValidate,
+        }) as any
+    );
+
+    // Mock ResultFormatter
+    const mockFormatToMarkdown = vi
+      .fn()
+      .mockReturnValue(
+        '## Validation Results\n❌ Validation failed\n- Commit message format needs improvement\n- Add unit tests'
+      );
+    vi.mocked(ResultFormatter).mockImplementation(
+      () =>
+        ({
+          formatToMarkdown: mockFormatToMarkdown,
+        }) as any
+    );
+
+    // Mock GitHubClient with createComment method
+    const mockCreateComment = vi.fn().mockResolvedValue({
+      id: 123456,
+      body: 'Test comment',
+      created_at: '2023-01-01T00:00:00Z',
+      updated_at: '2023-01-01T00:00:00Z',
+    });
+    vi.mocked(GitHubClient).mockImplementation(
+      () =>
+        ({
+          createComment: mockCreateComment,
+        }) as any
+    );
+
+    // Set GitHub context
+    process.env['GITHUB_REPOSITORY'] = 'test-owner/test-repo';
+    process.env['GITHUB_EVENT_PATH'] = 'test/fixtures/pr-event.json';
+
+    // Import and test the run function
+    const { run } = await import('../../src/index');
+    await run();
+
+    // Verify ResultFormatter was called with validation result
+    expect(mockFormatToMarkdown).toHaveBeenCalledWith(mockValidationResult);
+
+    // Verify createComment was called with formatted markdown
+    expect(mockCreateComment).toHaveBeenCalledWith(
+      'test-owner',
+      'test-repo',
+      456,
+      '## Validation Results\n❌ Validation failed\n- Commit message format needs improvement\n- Add unit tests',
+      'ai-validator'
+    );
+
+    // Verify comment-url output was set
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'comment-url',
+      'https://github.com/test-owner/test-repo/pull/456#issuecomment-123456'
     );
   });
 });

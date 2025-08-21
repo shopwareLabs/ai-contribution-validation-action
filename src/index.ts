@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import { GitHubClient } from './github/client';
 import { GeminiClient } from './ai/gemini-client';
 import { Validator, type ValidationConfig } from './core/validator';
+import { ResultFormatter } from './core/formatter';
 
 /**
  * Main GitHub Action entry point that orchestrates the validation workflow.
@@ -32,6 +33,10 @@ export async function run(): Promise<void> {
     const guidelinesFile =
       core.getInput('guidelines-file') || 'CONTRIBUTING.md';
     const skipAuthors = core.getInput('skip-authors');
+    // Comment identifier enables multiple validators to coexist in same repository
+    // without overwriting each other's feedback comments
+    const commentIdentifier =
+      core.getInput('comment-identifier') || 'ai-validator';
 
     core.info('Creating validator with GitHub and Gemini clients...');
 
@@ -89,6 +94,27 @@ export async function run(): Promise<void> {
 
     // Execute validation workflow with extracted context
     const validationResult = await validator.validate(owner, repo, prNumber);
+
+    // Create PR comment with validation result
+    // ResultFormatter is instantiated per-request to maintain stateless design
+    // and avoid shared state between concurrent validation workflows
+    const formatter = new ResultFormatter();
+    const formattedResult = formatter.formatToMarkdown(validationResult);
+
+    // Post comment with configurable identifier to enable multiple validators
+    // to coexist without conflicts. The identifier allows later updates/removal.
+    const commentResult = await githubClient.createComment(
+      owner,
+      repo,
+      prNumber,
+      formattedResult,
+      commentIdentifier
+    );
+
+    // Construct GitHub comment URL following standard GitHub URL patterns
+    // This enables CI/CD systems to link directly to the posted feedback
+    const commentUrl = `https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentResult.id}`;
+    core.setOutput('comment-url', commentUrl);
 
     // Report results using appropriate GitHub Actions logging levels
     if (validationResult.valid) {

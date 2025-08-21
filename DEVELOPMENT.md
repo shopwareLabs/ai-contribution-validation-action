@@ -268,6 +268,35 @@ authenticity and provides clear error messages for invalid tokens.
 3. **Compatibility**: Works with all GitHub token types (classic, fine-grained, automatic)
 4. **Future-proof**: Supports new token formats without code changes
 
+### PR Comment Creation Pattern
+
+**Decision**: Implement PR comment creation with configurable identifiers and action outputs for
+CI/CD integration.
+
+**Rationale**: Users need immediate feedback on validation results directly in the PR interface.
+Console logs are hidden in action runs and don't provide the visibility needed for effective code
+review workflows. Comments create a permanent audit trail and enable reviewers to see validation
+feedback alongside code changes.
+
+**Implementation**:
+
+- **ResultFormatter Integration**: Instantiate per-request to maintain stateless design and avoid
+  shared state between concurrent workflows
+- **Configurable Identifiers**: `comment-identifier` input enables multiple validators to coexist
+  without conflicts, defaulting to `ai-validator`
+- **Comment URL Output**: Expose `comment-url` action output following GitHub's standard URL
+  patterns for CI/CD system integration
+- **Immediate Posting**: Create comment immediately after validation to provide real-time feedback
+
+**Architecture Benefits**:
+
+1. **Visibility**: Validation feedback appears directly in PR interface where developers expect it
+2. **Multi-Validator Support**: Identifier pattern allows multiple AI validators without comment
+   conflicts
+3. **CI/CD Integration**: Comment URL output enables workflow automation and notification systems
+4. **Audit Trail**: Comments preserve validation history for compliance and review processes
+5. **Performance**: Stateless formatter design supports concurrent validation workflows
+
 ## Project Structure
 
 ```

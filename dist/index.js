@@ -124,6 +124,86 @@ exports.GeminiClient = GeminiClient;
 
 /***/ }),
 
+/***/ 2843:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ResultFormatter = void 0;
+class ResultFormatter {
+    formatToMarkdown(validationResult) {
+        let markdown = '## 🤖 AI Validation Results\n\n';
+        if (validationResult.valid) {
+            markdown += '✅ **Validation Passed**\n';
+        }
+        else {
+            markdown += '❌ **Validation Failed**\n\n';
+            if (validationResult.suggestions.length > 0) {
+                const errors = validationResult.suggestions.filter(s => s.startsWith('ERROR:'));
+                if (errors.length > 0) {
+                    markdown += '### 🚨 Errors\n\n';
+                    errors.forEach(error => {
+                        const cleanedError = error.replace('ERROR: ', '');
+                        const truncatedError = cleanedError.length > 1000
+                            ? `${cleanedError.substring(0, 1000)}...`
+                            : cleanedError;
+                        markdown += `- ${truncatedError}\n`;
+                    });
+                }
+                const warnings = validationResult.suggestions.filter(s => s.startsWith('WARNING:'));
+                if (warnings.length > 0) {
+                    markdown += '### ⚠️ Warnings\n\n';
+                    warnings.forEach(warning => {
+                        const cleanedWarning = warning.replace('WARNING: ', '');
+                        const truncatedWarning = cleanedWarning.length > 1000
+                            ? `${cleanedWarning.substring(0, 1000)}...`
+                            : cleanedWarning;
+                        markdown += `- ${truncatedWarning}\n`;
+                    });
+                }
+                const suggestions = validationResult.suggestions.filter(s => s.startsWith('SUGGESTION:'));
+                if (suggestions.length > 0) {
+                    markdown += '### 💡 Suggestions\n\n';
+                    suggestions.forEach(suggestion => {
+                        const cleanedSuggestion = suggestion.replace('SUGGESTION: ', '');
+                        const truncatedSuggestion = cleanedSuggestion.length > 1000
+                            ? `${cleanedSuggestion.substring(0, 1000)}...`
+                            : cleanedSuggestion;
+                        markdown += `- ${truncatedSuggestion}\n`;
+                    });
+                }
+                const uncategorized = validationResult.suggestions.filter(s => !s.startsWith('ERROR:') &&
+                    !s.startsWith('WARNING:') &&
+                    !s.startsWith('SUGGESTION:'));
+                if (uncategorized.length > 0) {
+                    markdown += '### Suggestions\n\n';
+                    uncategorized.forEach(suggestion => {
+                        markdown += `- ${suggestion}\n`;
+                    });
+                }
+            }
+            markdown += '\n## 📝 Next Steps\n\n';
+            let stepNumber = 1;
+            validationResult.suggestions.forEach(suggestion => {
+                if (suggestion.startsWith('ERROR: Missing unit tests')) {
+                    markdown += `${stepNumber}. Add unit tests for your changes\n`;
+                    stepNumber++;
+                }
+                else if (suggestion.startsWith('WARNING: Large PR size')) {
+                    markdown += `${stepNumber}. Break down large PR into smaller, focused changes\n`;
+                    stepNumber++;
+                }
+            });
+        }
+        return markdown;
+    }
+}
+exports.ResultFormatter = ResultFormatter;
+//# sourceMappingURL=formatter.js.map
+
+/***/ }),
+
 /***/ 3631:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -473,6 +553,7 @@ const fs = __importStar(__nccwpck_require__(9896));
 const client_1 = __nccwpck_require__(5662);
 const gemini_client_1 = __nccwpck_require__(705);
 const validator_1 = __nccwpck_require__(3631);
+const formatter_1 = __nccwpck_require__(2843);
 async function run() {
     try {
         core.info('AI Contribution Validator Action starting...');
@@ -480,6 +561,7 @@ async function run() {
         const geminiApiKey = core.getInput('gemini-api-key');
         const guidelinesFile = core.getInput('guidelines-file') || 'CONTRIBUTING.md';
         const skipAuthors = core.getInput('skip-authors');
+        const commentIdentifier = core.getInput('comment-identifier') || 'ai-validator';
         core.info('Creating validator with GitHub and Gemini clients...');
         const config = {
             githubToken,
@@ -516,6 +598,11 @@ async function run() {
         }
         core.info(`Validating PR #${prNumber} in ${owner}/${repo}`);
         const validationResult = await validator.validate(owner, repo, prNumber);
+        const formatter = new formatter_1.ResultFormatter();
+        const formattedResult = formatter.formatToMarkdown(validationResult);
+        const commentResult = await githubClient.createComment(owner, repo, prNumber, formattedResult, commentIdentifier);
+        const commentUrl = `https://github.com/${owner}/${repo}/pull/${prNumber}#issuecomment-${commentResult.id}`;
+        core.setOutput('comment-url', commentUrl);
         if (validationResult.valid) {
             core.info('Validation completed successfully - PR meets guidelines');
         }
