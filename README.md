@@ -1,5 +1,11 @@
 # AI Contribution Validator Action
 
+> ⚠️ **EXPERIMENTAL PROJECT**
+>
+> This project is currently in an experimental phase and is **not intended for production use**. The
+> API, configuration options, and behavior may change significantly between versions without notice.
+> Use at your own risk and expect potential breaking changes.
+
 [![CI](https://github.com/shopwareLabs/ai-contribution-validation-action/actions/workflows/ci.yml/badge.svg)](https://github.com/shopwareLabs/ai-contribution-validation-action/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/shopwareLabs/ai-contribution-validation-action/branch/main/graph/badge.svg)](https://codecov.io/gh/shopwareLabs/ai-contribution-validation-action)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

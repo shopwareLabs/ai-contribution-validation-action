@@ -142,6 +142,19 @@ validation logic. Maintain cost visibility and performance monitoring across dif
 
 ## Architecture Decisions
 
+### Project Status Communication
+
+**Decision**: Add prominent experimental disclaimer at top of README with warning emoji and
+blockquote formatting.
+
+**Rationale**: Clear communication that project is not production-ready prevents misuse, sets proper
+expectations for early adopters, and reduces support burden from users encountering breaking
+changes.
+
+**Implementation**: Positioned disclaimer immediately after title but before badges for maximum
+visibility. Uses markdown blockquote with warning emoji and bold formatting to ensure it stands out
+visually.
+
 ### Test Coverage Strategy
 
 **Decision**: Target comprehensive coverage focusing on error paths and edge cases rather than just
