@@ -21,6 +21,17 @@ export interface ValidationResult {
 /**
  * Formats structured validation results into rich markdown for GitHub PR comments.
  * Uses emojis and clear sections to make feedback actionable and user-friendly.
+ *
+ * Status-Specific Messaging Design:
+ * The formatter uses distinct improvement headers based on validation status to
+ * prevent contributor confusion about whether changes are required:
+ * - PASS: "Optional Enhancements" with explicit messaging that PR is ready to merge
+ * - WARNINGS: "Suggested Improvements" for recommended but not blocking changes
+ * - FAIL: "Required Improvements" for changes that must be made before merging
+ *
+ * This clarity pattern was introduced after contributors expressed confusion when
+ * passed PRs included suggestions, unsure if action was needed. The differentiated
+ * headers and explanatory text ensure clear communication of expectations.
  */
 export class ResultFormatter {
   formatToMarkdown(validationResult: ValidationResult): string {
@@ -62,7 +73,20 @@ export class ResultFormatter {
       validationResult.improved_description.trim() !== '';
 
     if (hasImprovements) {
-      markdown += '### ✨ Specific Improvements:\n\n';
+      // Status-specific headers communicate the urgency and requirement level of suggestions.
+      // This conditional logic ensures contributors understand whether AI suggestions are
+      // mandatory fixes (FAIL), recommended improvements (WARNINGS), or optional ideas (PASS).
+      // The PASS status includes additional explanatory text to explicitly state that the
+      // PR is ready to merge, addressing a common point of confusion.
+      if (validationResult.status === 'PASS') {
+        markdown += '### 💡 Optional Enhancements:\n\n';
+        markdown +=
+          'Your PR meets all requirements and is ready to merge. The following suggestions are optional enhancements you might consider for future contributions:\n\n';
+      } else if (validationResult.status === 'WARNINGS') {
+        markdown += '### ⚠️ Suggested Improvements:\n\n';
+      } else {
+        markdown += '### ✨ Required Improvements:\n\n';
+      }
 
       if (validationResult.improved_title.trim() !== '') {
         markdown += '#### 📝 Suggested PR Title:\n';

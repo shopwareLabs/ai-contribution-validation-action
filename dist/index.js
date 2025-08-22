@@ -197,7 +197,17 @@ class ResultFormatter {
             validationResult.improved_commits.trim() !== '' ||
             validationResult.improved_description.trim() !== '';
         if (hasImprovements) {
-            markdown += '### ✨ Specific Improvements:\n\n';
+            if (validationResult.status === 'PASS') {
+                markdown += '### 💡 Optional Enhancements:\n\n';
+                markdown +=
+                    'Your PR meets all requirements and is ready to merge. The following suggestions are optional enhancements you might consider for future contributions:\n\n';
+            }
+            else if (validationResult.status === 'WARNINGS') {
+                markdown += '### ⚠️ Suggested Improvements:\n\n';
+            }
+            else {
+                markdown += '### ✨ Required Improvements:\n\n';
+            }
             if (validationResult.improved_title.trim() !== '') {
                 markdown += '#### 📝 Suggested PR Title:\n';
                 markdown += '```\n';

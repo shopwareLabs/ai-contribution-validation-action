@@ -163,6 +163,28 @@ testing capabilities.
 - Test timeout scenarios thoroughly
 - Provide clear feedback for timeout conditions
 
+### Problem: Status-Specific Messaging Confusion
+
+**Issue:** Contributors were confused when PRs that passed validation still received improvement
+suggestions, uncertain whether changes were required for merge approval or were optional
+enhancements.
+
+**Solution:**
+
+- Implemented status-specific improvement headers in ResultFormatter
+- Added distinct messaging: "Optional Enhancements" (PASS), "Suggested Improvements" (WARNINGS),
+  "Required Improvements" (FAIL)
+- Included explicit explanatory text for PASS status stating "Your PR meets all requirements and is
+  ready to merge"
+- Used conditional logic to select appropriate headers based on validation status
+
+**Prevention Strategy:**
+
+- Design user-facing messages with clear communication of requirement levels
+- Use progressive urgency indicators to convey action necessity
+- Include explicit status explanations to eliminate ambiguity
+- Test messaging clarity with actual user scenarios and feedback
+
 ## CI/CD Pipeline Maintenance
 
 ### Problem: GitHub Actions Deprecation Warnings
