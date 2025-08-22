@@ -40,7 +40,7 @@ describe('ResultFormatter', () => {
         "- Commit message doesn't follow conventional format"
       );
       expect(markdown).toContain('- PR description lacks test plan section');
-      expect(markdown).toContain('### ✨ Specific Improvements:');
+      expect(markdown).toContain('### ✨ Required Improvements:');
       expect(markdown).toContain('#### 📝 Suggested PR Title:');
       expect(markdown).toContain(
         'feat(validator): add structured validation output'
@@ -70,7 +70,9 @@ describe('ResultFormatter', () => {
       );
       expect(markdown).toContain('### 📋 Issues Found:');
       expect(markdown).toContain('_No issues detected_');
-      expect(markdown).not.toContain('### ✨ Specific Improvements:');
+      expect(markdown).not.toContain('### 💡 Optional Enhancements:');
+      expect(markdown).not.toContain('### ⚠️ Suggested Improvements:');
+      expect(markdown).not.toContain('### ✨ Required Improvements:');
     });
 
     it('should format validation with warnings', () => {
@@ -147,7 +149,7 @@ describe('ResultFormatter', () => {
 
       const markdown = formatter.formatToMarkdown(validationResult);
 
-      expect(markdown).not.toContain('### ✨ Specific Improvements:');
+      expect(markdown).not.toContain('### ✨ Required Improvements:');
       expect(markdown).not.toContain('#### 📝 Suggested PR Title:');
       expect(markdown).not.toContain('#### 📋 Suggested Commit Message:');
       expect(markdown).not.toContain('#### 📄 Suggested PR Description:');
@@ -165,12 +167,84 @@ describe('ResultFormatter', () => {
 
       const markdown = formatter.formatToMarkdown(validationResult);
 
-      expect(markdown).toContain('### ✨ Specific Improvements:');
+      expect(markdown).toContain('### ⚠️ Suggested Improvements:');
       expect(markdown).toContain('#### 📝 Suggested PR Title:');
       expect(markdown).toContain('Better title');
       expect(markdown).not.toContain('#### 📋 Suggested Commit Message:');
       expect(markdown).toContain('#### 📄 Suggested PR Description:');
       expect(markdown).toContain('Better description');
+    });
+  });
+
+  describe('status-specific messaging improvements', () => {
+    it('should show optional enhancements for PASS status with suggestions', () => {
+      const formatter = new ResultFormatter();
+      const validationResult: ValidationResult = {
+        status: 'PASS',
+        issues: [],
+        improved_title: 'feat(validator): enhanced validation logic',
+        improved_commits:
+          'feat(validator): enhanced validation logic\n\nImprove the validation algorithm for better accuracy.',
+        improved_description:
+          'Enhanced validation with better accuracy metrics.',
+      };
+
+      const markdown = formatter.formatToMarkdown(validationResult);
+
+      expect(markdown).toContain('### Status: ✅ Passed');
+      expect(markdown).toContain(
+        'Great work! Your contribution meets our guidelines.'
+      );
+      expect(markdown).toContain('### 💡 Optional Enhancements:');
+      expect(markdown).toContain(
+        'Your PR meets all requirements and is ready to merge. The following suggestions are optional enhancements you might consider for future contributions:'
+      );
+      expect(markdown).not.toContain('### ✨ Specific Improvements:');
+    });
+
+    it('should show suggested improvements for WARNINGS status', () => {
+      const formatter = new ResultFormatter();
+      const validationResult: ValidationResult = {
+        status: 'WARNINGS',
+        issues: ['Consider adding more detailed commit messages'],
+        improved_title: '',
+        improved_commits:
+          'feat(validator): add structured validation output\n\nImplement structured JSON format with detailed explanation.',
+        improved_description: '',
+      };
+
+      const markdown = formatter.formatToMarkdown(validationResult);
+
+      expect(markdown).toContain('### Status: ⚠️ Passed with Warnings');
+      expect(markdown).toContain(
+        'Your contribution looks good, but consider these suggestions for improvement.'
+      );
+      expect(markdown).toContain('### ⚠️ Suggested Improvements:');
+      expect(markdown).not.toContain('### ✨ Required Improvements:');
+      expect(markdown).not.toContain('### 💡 Optional Enhancements:');
+    });
+
+    it('should show required improvements for FAIL status', () => {
+      const formatter = new ResultFormatter();
+      const validationResult: ValidationResult = {
+        status: 'FAIL',
+        issues: ['Commit message does not follow conventional format'],
+        improved_title: 'feat(validator): add structured validation output',
+        improved_commits:
+          'feat(validator): add structured validation output\n\nImplement structured JSON format for better CI/CD integration.',
+        improved_description:
+          '## What\nAdd structured validation\n## Why\nBetter feedback',
+      };
+
+      const markdown = formatter.formatToMarkdown(validationResult);
+
+      expect(markdown).toContain('### Status: ❌ Needs Improvement');
+      expect(markdown).toContain(
+        'Your contribution needs some changes to meet our guidelines.'
+      );
+      expect(markdown).toContain('### ✨ Required Improvements:');
+      expect(markdown).not.toContain('### ⚠️ Suggested Improvements:');
+      expect(markdown).not.toContain('### 💡 Optional Enhancements:');
     });
   });
 });

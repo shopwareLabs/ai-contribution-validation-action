@@ -200,6 +200,17 @@ handling.
 Users need immediate feedback in PR interface, not hidden console logs. **Benefits**: Direct
 visibility, multi-validator support, CI/CD integration, audit trail, stateless design.
 
+### Status-Specific Validation Messaging
+
+**Decision**: Different improvement headers and explanatory text based on validation status (PASS:
+"Optional Enhancements", WARNINGS: "Suggested Improvements", FAIL: "Required Improvements").
+**Rationale**: Contributors were confused when PRs that passed validation still received improvement
+suggestions, unsure whether changes were required for merge approval. **Benefits**: Clear
+communication of requirement levels, reduced contributor confusion, explicit "ready to merge"
+messaging for passed PRs, maintained helpful AI guidance without creating uncertainty.
+**Implementation**: ResultFormatter uses conditional logic to select appropriate headers and adds
+explanatory text for PASS status explicitly stating the PR meets all requirements.
+
 ## Project Structure
 
 ```
