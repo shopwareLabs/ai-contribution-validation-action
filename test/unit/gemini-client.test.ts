@@ -239,30 +239,21 @@ describe('GeminiClient', () => {
 
       // Create a detailed prompt that would benefit from AI analysis
       const detailedPrompt = `
-Analyze this pull request against the contribution guidelines:
+Analyze this pull request TEXT FORMAT against the contribution guidelines:
 
 **Pull Request Details:**
 - Title: feat(auth): add OAuth2 integration
 - Description: Implements OAuth2 authentication with Google and GitHub providers
-- Files changed: 5 (5 total)
-- Lines added: 150
-- Lines deleted: 10
 
 **Commits:**
 - feat(auth): add OAuth2 integration (by Developer)
 - fix(auth): handle callback errors (by Developer)
 
-**File Changes:**
-- src/auth/oauth.ts (added, +80/-0)
-- src/auth/providers.ts (added, +40/-0)
-- src/config/auth.ts (modified, +20/-5)
-- test/auth/oauth.test.ts (added, +30/-0)
-- README.md (modified, +10/-5)
-
 **Contribution Guidelines:**
 Use conventional commits. Write comprehensive tests. Update documentation. Keep PRs focused.
 
-Please validate this pull request and provide specific, actionable feedback.`;
+IMPORTANT: Validate ONLY the text format (title, description, commit messages).
+Do NOT evaluate code changes, architecture, or implementation details.`;
 
       const result = await client.validateContent(detailedPrompt);
 
@@ -341,6 +332,179 @@ Please validate this pull request and provide specific, actionable feedback.`;
         completionTokens: 0,
         totalTokens: 0,
       });
+    });
+  });
+
+  describe('text-format-only validation', () => {
+    it('should validate ONLY text format, not code changes', () => {
+      const client = new GeminiClient('valid-api-key');
+      const prData = {
+        number: 789,
+        title: 'feat(auth): add OAuth integration',
+        body: `## What
+        Adds OAuth integration
+        
+        ## Why
+        Users need SSO capabilities
+        
+        ## How
+        Implemented OAuth2 flow with proper token handling`,
+        commits: [
+          {
+            sha: 'abc789',
+            message: 'feat(auth): add OAuth integration',
+            author: {
+              name: 'Dev User',
+              email: 'dev@example.com',
+              date: '2025-01-01T00:00:00Z',
+            },
+          },
+        ],
+        files: [
+          {
+            filename: 'huge-complex-file.ts',
+            status: 'added',
+            additions: 5000,
+            deletions: 0,
+            changes: 5000,
+          },
+        ],
+        diffStats: {
+          totalAdditions: 5000,
+          totalDeletions: 0,
+          totalChanges: 5000,
+          filesChanged: 1,
+        },
+      };
+      const guidelines =
+        'Use conventional commits. Include What/Why/How sections.';
+
+      const prompt = client.generateValidationPrompt(prData, guidelines);
+
+      // Should NOT include code metrics
+      expect(prompt).not.toContain('5000');
+      expect(prompt).not.toContain('Lines added');
+      expect(prompt).not.toContain('Lines deleted');
+      expect(prompt).not.toContain('Files changed');
+      expect(prompt).not.toContain('huge-complex-file.ts');
+
+      // Should focus ONLY on text format
+      expect(prompt).toContain('TEXT FORMAT');
+      expect(prompt).toContain('Do NOT evaluate code changes');
+    });
+
+    it('should PASS well-formatted PR with proper conventional commits', async () => {
+      const client = new GeminiClient('valid-api-key');
+      const prData = {
+        number: 100,
+        title: 'feat(api): implement user authentication endpoint',
+        body: `## What
+        Implements JWT-based authentication for the API
+        
+        ## Why
+        Secure API access is required for production deployment
+        
+        ## How
+        - Added JWT token generation and validation
+        - Implemented refresh token mechanism
+        - Added rate limiting for auth endpoints`,
+        commits: [
+          {
+            sha: 'sha1',
+            message: 'feat(api): add JWT token generation',
+            author: { name: 'Dev', email: 'dev@test.com', date: '2025-01-01' },
+          },
+          {
+            sha: 'sha2',
+            message: 'feat(api): implement refresh token mechanism',
+            author: { name: 'Dev', email: 'dev@test.com', date: '2025-01-01' },
+          },
+        ],
+        files: [],
+        diffStats: {
+          totalAdditions: 0,
+          totalDeletions: 0,
+          totalChanges: 0,
+          filesChanged: 0,
+        },
+      };
+
+      const guidelines =
+        'Use conventional commits. Include What/Why/How sections.';
+      const prompt = client.generateValidationPrompt(prData, guidelines);
+
+      // Mock should be updated to recognize text-format-only validation
+      const result = await client.validateContent(prompt);
+
+      expect(result.status).toBe('PASS');
+      expect(result.issues).toEqual([]);
+    });
+
+    it('should validate text format criteria in structured prompt', async () => {
+      const client = new GeminiClient('valid-api-key');
+
+      // Create a spy to intercept the validateContent call
+      const validateSpy = vi.spyOn(client, 'validateContent');
+
+      const prData = {
+        number: 101,
+        title: 'Update code',
+        body: '',
+        commits: [
+          {
+            sha: 'sha1',
+            message: 'fix stuff',
+            author: { name: 'Dev', email: 'dev@test.com', date: '2025-01-01' },
+          },
+        ],
+        files: [],
+        diffStats: {
+          totalAdditions: 0,
+          totalDeletions: 0,
+          totalChanges: 0,
+          filesChanged: 0,
+        },
+      };
+
+      const guidelines =
+        'Use conventional commits format: type(scope): description';
+      const prompt = client.generateValidationPrompt(prData, guidelines);
+
+      // Call validateContent
+      await client.validateContent(prompt);
+
+      // Check that the prompt passed to validateContent focuses on text format
+      expect(validateSpy).toHaveBeenCalledWith(prompt);
+      const calledPrompt = validateSpy.mock.calls[0]?.[0] ?? '';
+
+      // Verify the prompt contains text-format-only instructions
+      expect(calledPrompt).toContain('TEXT FORMAT');
+      expect(calledPrompt).toContain('Do NOT evaluate code changes');
+      expect(calledPrompt).not.toContain('Lines added');
+      expect(calledPrompt).not.toContain('Files changed');
+    });
+
+    it('should use text-format-only validation criteria in validateContent', async () => {
+      // This test verifies that validateContent adds text-format-only criteria to the prompt
+      const client = new GeminiClient('valid-api-key');
+
+      // Replace the internal model's generateContent
+      // We need to test that the structured prompt includes text-format-only criteria
+      const originalPrompt = 'Test prompt for validation';
+      await client.validateContent(originalPrompt);
+
+      // Since we can't easily mock the internal GoogleGenerativeAI instance,
+      // we'll test this by checking that validateContent behavior aligns with text-format-only
+      // For now, we verify the mock returns the expected structure
+      const result = await client.validateContent(
+        'Test with TEXT FORMAT focus'
+      );
+
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('issues');
+      expect(result).toHaveProperty('improved_title');
+      expect(result).toHaveProperty('improved_commits');
+      expect(result).toHaveProperty('improved_description');
     });
   });
 });

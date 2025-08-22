@@ -28,6 +28,28 @@ actionable feedback to contributors.
 - **Bot Exclusion**: Skip validation for automated PRs (dependabot, renovate, etc.)
 - **Error Recovery**: Graceful handling of API failures and network issues
 
+## Validation Scope
+
+> 📝 **Current Focus: Text Format Validation**
+>
+> The validator currently focuses on **text format validation only** to provide fast, objective, and
+> predictable results. This includes:
+>
+> - **Commit message format** (e.g., conventional commits: `type(scope): description`)
+> - **PR title structure** and clarity
+> - **PR description completeness** (e.g., What/Why/How sections)
+>
+> **Currently NOT evaluated** (planned for future releases):
+>
+> - Code quality or architecture decisions
+> - File changes appropriateness
+> - Implementation details or technical choices
+> - Code complexity or size metrics
+>
+> This text-first approach ensures consistent contribution documentation standards with lower API
+> costs and faster response times. Code content analysis features will be added in future versions
+> based on user feedback and requirements.
+
 ## Quick Start
 
 ### Basic Usage

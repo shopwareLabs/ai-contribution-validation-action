@@ -4,6 +4,8 @@
 
 - **Phase 0-3**: Foundation & MVP - Core architecture, API integration, v0.1.0 release
 - **Phase 3.5**: Critical Fixes - Token validation, PR comments, structured validation format
+- **Phase 4**: Text-Format-Only Validation - Focused validation on text format, excluding code
+  analysis
 - **Phase 5.5**: Comment Updates - Idempotent comments, prevents duplicates on force-push
 
 ## 📦 Action Usage
@@ -32,30 +34,7 @@
     skip-authors: 'dependabot[bot],renovate[bot]'
 ```
 
-## 🎯 Phase 4: Validation Scope Refinement (CURRENT)
-
-### Next Priority: Text-Format-Only Validation
-
-**Goal**: Refine validation to focus specifically on text format (PR titles, descriptions, commit
-messages) rather than code content analysis, making validation more predictable and objective.
-
-**Quick Start:**
-
-```bash
-# Update generateValidationPrompt() in src/ai/gemini-client.ts
-# Remove code metrics and file change analysis
-# Focus validation criteria on text format only
-```
-
-**Implementation Plan:**
-
-1. **Scope Reduction** - Remove code metrics, file changes, and implementation analysis
-2. **Text Focus** - Validate only commit message format, PR title structure, and description
-   completeness
-3. **Prompt Refinement** - Update AI prompts to exclude code quality assessment
-4. **Predictable Results** - Make validation objective and format-focused rather than subjective
-
-## 🎯 Phase 4.5: Reliability & Performance
+## 🎯 Phase 4.5: Reliability & Performance (NEXT)
 
 ### Exponential Backoff Retry Logic
 

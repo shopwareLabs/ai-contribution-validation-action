@@ -19,29 +19,20 @@ class GeminiClient {
     }
     generateValidationPrompt(prData, guidelines) {
         return `
-Analyze this pull request against the contribution guidelines:
+Analyze this pull request TEXT FORMAT against the contribution guidelines:
 
 **Pull Request Details:**
 - Title: ${prData.title}
 - Description: ${prData.body || 'No description provided'}
-- Files changed: ${prData.files.length} (${prData.diffStats.filesChanged} total)
-- Lines added: ${prData.diffStats.totalAdditions}
-- Lines deleted: ${prData.diffStats.totalDeletions}
 
 **Commits:**
 ${prData.commits.map(commit => `- ${commit.message} (by ${commit.author.name})`).join('\n')}
 
-**File Changes:**
-${prData.files
-            .slice(0, 5)
-            .map(file => `- ${file.filename} (${file.status}, +${file.additions}/-${file.deletions})`)
-            .join('\n')}
-${prData.files.length > 5 ? `... and ${prData.files.length - 5} more files` : ''}
-
 **Contribution Guidelines:**
 ${guidelines}
 
-Please validate this pull request and provide specific, actionable feedback.`;
+IMPORTANT: Validate ONLY the text format (title, description, commit messages).
+Do NOT evaluate code changes, architecture, or implementation details.`;
     }
     async validateContent(prompt) {
         try {
@@ -100,28 +91,32 @@ Please validate this pull request and provide specific, actionable feedback.`;
             });
             const structuredPrompt = `${prompt}
 
-Return a JSON response with this exact structure analyzing this pull request:
+Return a JSON response analyzing ONLY the TEXT FORMAT of this pull request:
 {
   "status": "PASS" | "FAIL" | "WARNINGS",
-  "issues": ["list of specific issues found"],
-  "improved_title": "suggested improved PR title (empty string if title is fine)",
-  "improved_commits": "suggested improved commit message (empty string if commits are fine)",
-  "improved_description": "suggested improved PR description (empty string if description is fine)"
+  "issues": ["list of text format issues only"],
+  "improved_title": "suggested improved PR title format",
+  "improved_commits": "suggested improved commit message format",
+  "improved_description": "suggested improved PR description structure"
 }
 
-Validation criteria:
-1. Commit message format and clarity (conventional commits preferred)
-2. PR title descriptiveness and format
-3. PR description completeness and structure
-4. Code organization and file changes appropriateness
-5. Adherence to the stated guidelines
+TEXT FORMAT validation criteria ONLY:
+1. Commit message format (conventional commits: type(scope): description)
+2. PR title format and clarity
+3. PR description structure (has sections like What/Why/How)
+
+Do NOT evaluate:
+- Code quality or architecture
+- File changes appropriateness
+- Implementation details
+- Technical decisions
 
 Status guidelines:
-- PASS: No issues, follows all guidelines
-- WARNINGS: Minor issues or suggestions for improvement
-- FAIL: Significant issues that need to be addressed
+- PASS: Text format follows all guidelines
+- WARNINGS: Minor format issues or missing sections
+- FAIL: Significant format violations (non-conventional commits, missing description)
 
-Be specific and constructive in feedback.`;
+Focus ONLY on text formatting, NOT on what the code does.`;
             const result = await model.generateContent(structuredPrompt);
             const { response } = result;
             const { usageMetadata } = response;
