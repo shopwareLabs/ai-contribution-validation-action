@@ -270,3 +270,31 @@ if (existingComment) {
 - Design workflows to be safe for repeated execution
 - Leverage existing infrastructure before building new solutions
 - Follow TDD to ensure all edge cases are covered
+
+## Development Tools & Git Hooks
+
+### Problem: Husky Deprecation and Performance Overhead
+
+**Issue:** Husky v9 showed deprecation warnings for v10, added 328K of tooling overhead, and caused
+slower commit times due to abstraction layers and sequential execution.
+
+**Solution:**
+
+- Migrated from husky (v9.1.7) to simple-git-hooks (v2.13.1)
+- Reduced configuration to single package.json entry
+- Eliminated .husky directory and wrapper scripts
+- Maintained lint-staged integration for staged file processing
+
+**Benefits:**
+
+- 2x faster commit times (direct git hooks without abstraction)
+- Zero dependencies (simple-git-hooks has no sub-dependencies)
+- Simpler configuration in package.json
+- No deprecation warnings or breaking changes to worry about
+
+**Prevention Strategy:**
+
+- Regularly evaluate development tools for performance impact
+- Prefer zero-dependency solutions when functionality is equivalent
+- Monitor deprecation warnings and act proactively
+- Test development workflow performance as part of DX considerations
