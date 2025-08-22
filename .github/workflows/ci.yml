@@ -42,6 +42,23 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Build action
+        run: npm run build
+
+      - name: Verify dist files exist
+        run: |
+          echo "Checking for required dist files..."
+          if [ ! -f dist/index.js ]; then
+            echo "❌ Error: dist/index.js is missing!"
+            echo "The GitHub Action requires dist/index.js to be built."
+            exit 1
+          fi
+          if [ ! -f dist/index.js.map ]; then
+            echo "⚠️ Warning: dist/index.js.map is missing (source maps help with debugging)"
+          fi
+          echo "✅ Build verification passed - dist/index.js exists"
+          echo "📦 Bundle size: $(du -sh dist/index.js | cut -f1)"
+
       - name: Upload coverage reports
         if: matrix.node-version == 20
         uses: codecov/codecov-action@v5
