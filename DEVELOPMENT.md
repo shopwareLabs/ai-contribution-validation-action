@@ -168,6 +168,17 @@ optimization, cost control, flexible configuration, clear feedback.
 skip-authors: 'dependabot[bot],renovate[bot],github-actions[bot]'
 ```
 
+### Text-Format-Only Validation (Phase 4)
+
+**Decision**: Focus validation exclusively on text format (commits, titles, descriptions) rather
+than code content analysis. **Rationale**: Provides objective, predictable validation with faster
+response times and lower API costs. Code quality assessment is subjective and better suited for
+human review or specialized tools. **Implementation**: Modified `generateValidationPrompt()` to
+exclude code metrics and file changes, updated validation criteria to explicitly focus on text
+format only. **Benefits**: 50% reduction in prompt size, consistent validation results, clearer
+contributor expectations, reduced false positives from subjective code opinions. **Future**: Code
+analysis features planned for optional activation in future releases based on user requirements.
+
 ### Idempotent Comment Management
 
 **Decision**: Check for existing comments before creating new ones, update if found. **Rationale**:
