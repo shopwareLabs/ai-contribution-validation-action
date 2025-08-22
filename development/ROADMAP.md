@@ -7,11 +7,49 @@
 - **Phase 4**: Text-Format-Only Validation - Focused validation on text format, excluding code
   analysis
 - **Phase 4.5**: PR Comment Clarity - Status-specific improvement headers for clear communication
+- **Phase 4.6**: Development Tools Migration - Husky to simple-git-hooks (2x faster commits)
 - **Phase 5.5**: Comment Updates - Idempotent comments, prevents duplicates on force-push
 
-## 📦 Action Usage
+## 🎯 Phase 4.7: Reliability & Performance
 
-### Basic Usage
+**Goal**: Activate exponential backoff retry logic for graceful rate limit handling.
+
+**Tasks:**
+
+1. Uncomment existing exponential backoff implementation
+2. Update API methods to use retry logic
+3. Test rate limit simulation
+4. Optimize timing for GitHub Actions
+
+## 🎯 Phase 5: Advanced JSON Validation
+
+**Goal**: Extend validation with categorized results, severity levels, and analytics.
+
+**Features:**
+
+- Categorized validation (commits, PR description, code quality)
+- Severity levels (errors, warnings, suggestions)
+- Analytics integration (quality scores, metrics)
+- Enhanced CI/CD (JSON outputs for automation)
+
+## 📊 Phase 6: Enterprise Features
+
+- Multi-AI provider support (OpenAI, Claude)
+- Performance optimization (caching, batch processing)
+- Analytics dashboard (metrics, cost tracking)
+- Integrations (webhooks, Slack/Teams, JIRA)
+- Advanced analysis (diff context, test coverage)
+- Customization (rules, prompts)
+
+## 🔄 Phase 7: Marketplace & Community
+
+- Documentation (badges, CHANGELOG, migration guide)
+- Testing (comprehensive test suites, example repos)
+- Distribution (marketplace listing, semantic versioning)
+
+## 📦 Usage Examples
+
+### Basic
 
 ```yaml
 - uses: shopware/ai-contribution-validator@v1
@@ -20,7 +58,7 @@
     gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
 ```
 
-### Advanced Configuration
+### Advanced
 
 ```yaml
 - uses: shopware/ai-contribution-validator@v1
@@ -35,51 +73,7 @@
     skip-authors: 'dependabot[bot],renovate[bot]'
 ```
 
-## 🎯 Phase 4.6: Reliability & Performance (NEXT)
-
-### Exponential Backoff Retry Logic
-
-**Goal**: Activate the commented-out exponential backoff implementation in GitHubClient to handle
-rate limits gracefully.
-
-**Implementation Plan:**
-
-1. **Activate Retry Logic** - Uncomment and integrate existing exponential backoff implementation
-2. **API Integration** - Update createCommitStatus and other methods to use retry logic
-3. **Enhanced Testing** - Verify retry behavior with rate limit simulation
-4. **Performance Optimization** - Fine-tune backoff timing for GitHub Actions constraints
-
-## 🎯 Phase 5: Advanced JSON Validation Format
-
-**Goal**: Extend current structured format with categorized validation results, severity levels, and
-detailed analytics.
-
-**Implementation Plan:**
-
-1. **Categorized Validation** - Separate analysis for commits, PR description, code quality,
-   guidelines
-2. **Severity Levels** - Support for errors, warnings, and suggestions with specific fixes
-3. **Analytics Integration** - Quality scores, progress tracking, rule effectiveness metrics
-4. **Enhanced CI/CD** - JSON outputs for automation and conditional workflow logic
-
-## 📊 Phase 6: Enterprise Features
-
-1. **Multi-AI Provider Support** - OpenAI, Anthropic Claude integration alongside Gemini
-2. **Performance** - Response caching, batch processing, incremental validation
-3. **Analytics** - Metrics collection, cost tracking, compliance dashboard
-4. **Integration** - Webhooks, Slack/Teams notifications, JIRA linking
-5. **Advanced PR Analysis** - Diff context, file patterns, test coverage
-6. **Customization** - Custom rules (JSON/YAML), configurable prompts
-
-## 🔄 Phase 7: Marketplace & Community
-
-1. **Documentation** - README badges, CHANGELOG, migration guide
-2. **Testing** - Unit tests, integration tests, example repositories
-3. **Distribution** - Marketplace listing, semantic versioning, automated releases
-
-## 🎓 Usage Patterns
-
-### Organization-Wide Deployment
+### Organization-Wide
 
 ```yaml
 - uses: shopware/ai-contribution-validator@v1
@@ -100,19 +94,7 @@ jobs:
       - uses: shopware/ai-contribution-validator@v1
 ```
 
-### Multi-Language Projects
-
-```yaml
-- uses: shopware/ai-contribution-validator@v1
-  with:
-    custom-rules: |
-      {
-        "php": { "style": "PSR-12", "require_tests": true },
-        "typescript": { "style": "eslint-config-shopware", "require_types": true }
-      }
-```
-
 ## 📚 References
 
 - **[LESSONS_LEARNED.md](LESSONS_LEARNED.md)** - Problems, solutions, and prevention strategies
-- **[DEVELOPMENT.md](../DEVELOPMENT.md)** - Technical architecture and development patterns
+- **[DEVELOPMENT.md](../DEVELOPMENT.md)** - Technical architecture and patterns

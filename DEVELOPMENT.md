@@ -65,6 +65,35 @@ Examples:
 - Types: `PascalCase` ending with `Type` suffix
 - Constants: `SCREAMING_SNAKE_CASE`
 
+## Git Hooks
+
+This project uses `simple-git-hooks` for automated pre-commit checks:
+
+### Pre-commit Hook
+
+Automatically runs on `git commit`:
+
+1. **lint-staged** - Formats and lints only staged files
+   - TypeScript/JavaScript files: ESLint fix + Prettier
+   - JSON/Markdown/YAML files: Prettier formatting
+2. **typecheck** - Ensures TypeScript compilation succeeds
+
+### Setup
+
+Git hooks are automatically installed via `npm install`. To manually reinstall:
+
+```bash
+npx simple-git-hooks
+```
+
+### Bypassing Hooks
+
+In emergency situations only:
+
+```bash
+git commit --no-verify -m "fix: emergency hotfix"
+```
+
 ## Commands
 
 ### Testing
