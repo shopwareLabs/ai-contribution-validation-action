@@ -1,0 +1,54 @@
+{
+  "$schema": "https://unpkg.com/release-it@19/schema/release-it.json",
+  "git": {
+    "commitMessage": "chore(release): v${version}",
+    "requireBranch": "main",
+    "requireCleanWorkingDir": true,
+    "requireUpstream": true,
+    "tagName": "v${version}",
+    "tagAnnotation": "Release v${version}",
+    "push": true,
+    "pushArgs": ["--follow-tags"]
+  },
+  "github": {
+    "release": true,
+    "releaseName": "Release v${version}",
+    "draft": false,
+    "preRelease": false,
+    "autoGenerate": true,
+    "comments": {
+      "submit": true,
+      "issue": ":tada: This issue has been resolved in v${version}",
+      "pr": ":tada: This PR is included in v${version}"
+    }
+  },
+  "npm": {
+    "publish": false,
+    "skipChecks": true
+  },
+  "hooks": {
+    "before:init": [
+      "echo '🔍 Running pre-release checks...'",
+      "npm run typecheck",
+      "npm run lint",
+      "npm run test:unit"
+    ],
+    "after:bump": [
+      "echo '🔨 Building distribution...'",
+      "npm run build",
+      "git add dist/",
+      "echo '📝 Verifying CHANGELOG entry...'",
+      "grep -q \"\\[${version}\\]\" CHANGELOG.md || echo '⚠️  Warning: CHANGELOG.md missing entry for v${version}'"
+    ],
+    "after:git:release": "echo '✅ Git release created'",
+    "after:github:release": "echo '🚀 GitHub release published: ${github.releaseUrl}'",
+    "after:release": [
+      "echo '🎉 Successfully released ${name} v${version}'",
+      "echo ''",
+      "echo '📦 To use this version in workflows:'",
+      "echo '  uses: shopware/ai-contribution-validation-action@v${version}'",
+      "echo ''",
+      "echo '🔗 Release URL: ${github.releaseUrl}'"
+    ]
+  }
+}
