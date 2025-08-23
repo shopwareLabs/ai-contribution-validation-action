@@ -191,72 +191,24 @@ npm run test:watch
 
 ### Release Process
 
-This project uses [release-it](https://github.com/release-it/release-it) for automated versioning
-and releases.
+This project uses [release-it](https://github.com/release-it/release-it) for automated releases.
+Requirements: `main` branch, clean working directory, all tests passing.
 
-#### Prerequisites
+```bash
+npm run release:dry-run  # Test release without changes
+npm run release          # Interactive release
+npm run release:ci       # Automated CI release
+```
 
-- You must be on the `main` branch with a clean working directory
-- All tests must pass
-- You must have push access to the repository
-- You must have permissions to create GitHub releases
+The release process:
 
-#### Creating a Release
+- Validates code (typecheck, lint, tests)
+- Prompts for version bump (patch/minor/major)
+- Updates package.json and builds distribution
+- Creates git tag and GitHub release
+- Updates major version tag (e.g., v0 → v0.1.0)
 
-1. **Test the release process** (dry run):
-
-   ```bash
-   npm run release:dry-run
-   ```
-
-   This shows what would happen without making any changes.
-
-2. **Create an interactive release**:
-
-   ```bash
-   npm run release
-   ```
-
-   This will:
-   - Run pre-release validation (typecheck, lint, unit tests)
-   - Prompt for version bump (patch/minor/major)
-   - Update package.json version
-   - Build the distribution bundle
-   - Verify CHANGELOG.md entry exists
-   - Create git commit and tag
-   - Push to GitHub with the tag
-   - Create a GitHub release with auto-generated notes
-
-3. **Automated CI release** (for CI/CD pipelines):
-   ```bash
-   npm run release:ci
-   ```
-   Uses the same process but without interactive prompts.
-
-#### Release Configuration
-
-The release process is configured in `.release-it.json`:
-
-- **Git hooks**: Validates code quality before release
-- **Version format**: Uses semantic versioning with `v` prefix (e.g., v0.1.0)
-- **GitHub integration**: Automatically creates releases with changelogs
-- **Distribution**: Builds and commits the `dist/` folder
-
-#### Post-Release
-
-After a successful release:
-
-- The GitHub Actions workflow (`.github/workflows/release.yml`) will:
-  - Verify the build outputs
-  - Update the major version tag (e.g., v0 → v0.1.0)
-  - Make the action available at `shopware/ai-contribution-validation-action@v{version}`
-
-#### Troubleshooting
-
-- **"Working directory not clean"**: Commit or stash your changes first
-- **"Branch must be main"**: Switch to main branch with `git checkout main`
-- **"CHANGELOG missing entry"**: Add an entry for the new version in CHANGELOG.md
-- **Build failures**: Run `npm run validate` to identify and fix issues
+Configuration in `.release-it.json`. See [CHANGELOG.md](./CHANGELOG.md) for version history.
 
 ## Questions?
 
