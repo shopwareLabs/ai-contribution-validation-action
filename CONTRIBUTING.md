@@ -187,6 +187,77 @@ npm run test:integration
 npm run test:watch
 ```
 
+## Maintainers
+
+### Release Process
+
+This project uses [release-it](https://github.com/release-it/release-it) for automated versioning
+and releases.
+
+#### Prerequisites
+
+- You must be on the `main` branch with a clean working directory
+- All tests must pass
+- You must have push access to the repository
+- You must have permissions to create GitHub releases
+
+#### Creating a Release
+
+1. **Test the release process** (dry run):
+
+   ```bash
+   npm run release:dry-run
+   ```
+
+   This shows what would happen without making any changes.
+
+2. **Create an interactive release**:
+
+   ```bash
+   npm run release
+   ```
+
+   This will:
+   - Run pre-release validation (typecheck, lint, unit tests)
+   - Prompt for version bump (patch/minor/major)
+   - Update package.json version
+   - Build the distribution bundle
+   - Verify CHANGELOG.md entry exists
+   - Create git commit and tag
+   - Push to GitHub with the tag
+   - Create a GitHub release with auto-generated notes
+
+3. **Automated CI release** (for CI/CD pipelines):
+   ```bash
+   npm run release:ci
+   ```
+   Uses the same process but without interactive prompts.
+
+#### Release Configuration
+
+The release process is configured in `.release-it.json`:
+
+- **Git hooks**: Validates code quality before release
+- **Version format**: Uses semantic versioning with `v` prefix (e.g., v0.1.0)
+- **GitHub integration**: Automatically creates releases with changelogs
+- **Distribution**: Builds and commits the `dist/` folder
+
+#### Post-Release
+
+After a successful release:
+
+- The GitHub Actions workflow (`.github/workflows/release.yml`) will:
+  - Verify the build outputs
+  - Update the major version tag (e.g., v0 → v0.1.0)
+  - Make the action available at `shopware/ai-contribution-validation-action@v{version}`
+
+#### Troubleshooting
+
+- **"Working directory not clean"**: Commit or stash your changes first
+- **"Branch must be main"**: Switch to main branch with `git checkout main`
+- **"CHANGELOG missing entry"**: Add an entry for the new version in CHANGELOG.md
+- **Build failures**: Run `npm run validate` to identify and fix issues
+
 ## Questions?
 
 If you have questions about contributing, please:
