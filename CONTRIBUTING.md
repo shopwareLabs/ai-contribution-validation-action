@@ -187,6 +187,29 @@ npm run test:integration
 npm run test:watch
 ```
 
+## Maintainers
+
+### Release Process
+
+This project uses [release-it](https://github.com/release-it/release-it) for automated releases.
+Requirements: `main` branch, clean working directory, all tests passing.
+
+```bash
+npm run release:dry-run  # Test release without changes
+npm run release          # Interactive release
+npm run release:ci       # Automated CI release
+```
+
+The release process:
+
+- Validates code (typecheck, lint, tests)
+- Prompts for version bump (patch/minor/major)
+- Updates package.json and builds distribution
+- Creates git tag and GitHub release
+- Updates major version tag (e.g., v0 → v0.1.0)
+
+Configuration in `.release-it.json`. See [CHANGELOG.md](./CHANGELOG.md) for version history.
+
 ## Questions?
 
 If you have questions about contributing, please:
