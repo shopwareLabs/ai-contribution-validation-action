@@ -42,7 +42,7 @@ jobs:
       # Fallback error reporting if the action itself fails to provide feedback
       - name: Comment on validation failure
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({
